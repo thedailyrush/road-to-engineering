@@ -4,22 +4,22 @@
   const STORAGE_KEY = "overtime-tracker-v1";
 
   const DEFAULT_CATEGORIES = [
-    { name: "Overtime",                  type: "hourly", rate: 350,  defaultHours: 4 },
-    { name: "Overtime (Late)",           type: "hourly", rate: 350,  defaultHours: 2 },
-    { name: "Pre-time",                  type: "hourly", rate: 350,  defaultHours: 2 },
-    { name: "Bellevue Extra Att.",       type: "hourly", rate: 350,  defaultHours: 4 },
-    { name: "Weekend Back Up 1",         type: "hourly", rate: 350,  defaultHours: 8 },
-    { name: "Weekend Back Up 2",         type: "hourly", rate: 350,  defaultHours: 8 },
-    { name: "Weekend Flat Pay",          type: "flat",   rate: 400,  defaultHours: 0 },
-    { name: "Tisch M-Th Overnight",      type: "flat",   rate: 300,  defaultHours: 0 },
-    { name: "Tisch Friday Overnight",    type: "flat",   rate: 1300, defaultHours: 0 },
-    { name: "Bellevue M-Th Overnight",   type: "flat",   rate: 2400, defaultHours: 0 },
-    { name: "Bellevue Friday Overnight", type: "flat",   rate: 3600, defaultHours: 0 },
-    { name: "Saturday Call",             type: "flat",   rate: 5200, defaultHours: 0 },
-    { name: "Sunday Call",               type: "flat",   rate: 3600, defaultHours: 0 },
-    { name: "Bellevue Long Call",        type: "flat",   rate: 1050, defaultHours: 0 },
-    { name: "Holiday",                   type: "flat",   rate: 3700, defaultHours: 0 },
-    { name: "Holiday Saturday",          type: "flat",   rate: 5200, defaultHours: 0 },
+    { name: "Overtime",                  type: "hourly", rate: 350,  startTime: "17:00" },
+    { name: "Overtime (Late)",           type: "hourly", rate: 350,  startTime: "21:00" },
+    { name: "Pre-time",                  type: "hourly", rate: 350,  startTime: "06:00" },
+    { name: "Bellevue Extra Att.",       type: "hourly", rate: 350,  startTime: "17:00" },
+    { name: "Weekend Back Up 1",         type: "hourly", rate: 350,  startTime: "08:00" },
+    { name: "Weekend Back Up 2",         type: "hourly", rate: 350,  startTime: "08:00" },
+    { name: "Weekend Flat Pay",          type: "flat",   rate: 400,  startTime: "" },
+    { name: "Tisch M-Th Overnight",      type: "flat",   rate: 300,  startTime: "" },
+    { name: "Tisch Friday Overnight",    type: "flat",   rate: 1300, startTime: "" },
+    { name: "Bellevue M-Th Overnight",   type: "flat",   rate: 2400, startTime: "" },
+    { name: "Bellevue Friday Overnight", type: "flat",   rate: 3600, startTime: "" },
+    { name: "Saturday Call",             type: "flat",   rate: 5200, startTime: "" },
+    { name: "Sunday Call",               type: "flat",   rate: 3600, startTime: "" },
+    { name: "Bellevue Long Call",        type: "flat",   rate: 1050, startTime: "" },
+    { name: "Holiday",                   type: "flat",   rate: 3700, startTime: "" },
+    { name: "Holiday Saturday",          type: "flat",   rate: 5200, startTime: "" },
   ];
 
   const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -43,10 +43,26 @@
       state.categories = parsed.categories || [];
       state.entries = parsed.entries || [];
       if (state.categories.length === 0) seedDefaults();
+      migrate();
     } catch (e) {
       console.warn("Failed to load state, seeding defaults", e);
       seedDefaults();
     }
+  }
+
+  function migrate() {
+    for (const c of state.categories) {
+      if (c.startTime === undefined) c.startTime = c.type === "hourly" ? "17:00" : "";
+    }
+  }
+
+  function calcHoursFromTimes(start, end) {
+    if (!start || !end) return 0;
+    const [sh, sm] = start.split(":").map(Number);
+    const [eh, em] = end.split(":").map(Number);
+    let mins = (eh * 60 + em) - (sh * 60 + sm);
+    if (mins < 0) mins += 24 * 60;
+    return mins / 60;
   }
 
   function seedDefaults() {
@@ -105,8 +121,8 @@
           <input type="number" data-field="rate" min="0" step="0.01" value="${cat.rate}" />
         </td>
         <td class="num">
-          <input type="number" data-field="defaultHours" min="0" step="0.25"
-                 value="${cat.defaultHours || ""}"
+          <input type="time" data-field="startTime"
+                 value="${escapeAttr(cat.startTime || "")}"
                  ${cat.type === "flat" ? "disabled" : ""} />
         </td>
         <td class="num">
@@ -176,13 +192,18 @@
 
       const tr = document.createElement("tr");
       tr.dataset.id = e.id;
+      const hoursLabel = cat && cat.type === "hourly"
+        ? (e.endTime && cat.startTime
+            ? `${fmtHours(hours)} <span class="muted small">(${formatTime(cat.startTime)}–${formatTime(e.endTime)})</span>`
+            : fmtHours(hours))
+        : "—";
       tr.innerHTML = `
         <td>${formatDate(e.date)}</td>
         <td>
           ${cat ? escapeHtml(cat.name) : "<em>(deleted)</em>"}
           ${cat ? `<span class="pill ${cat.type}">${cat.type}</span>` : ""}
         </td>
-        <td class="num">${cat && cat.type === "hourly" ? fmtHours(hours) : "—"}</td>
+        <td class="num">${hoursLabel}</td>
         <td class="num">${fmtMoney(earned)}</td>
         <td><span class="pill ${e.status}">${e.status}</span></td>
         <td>${escapeHtml(e.note || "")}</td>
@@ -247,24 +268,57 @@
     });
   }
 
+  function formatTime(t) {
+    if (!t) return "";
+    const [h, m] = t.split(":").map(Number);
+    const period = h >= 12 ? "PM" : "AM";
+    const h12 = h % 12 || 12;
+    return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+  }
+
   // ----- entry form ---------------------------------------------------------
   function syncHoursField() {
     const sel = $("entryCategory");
     const cat = categoryById(sel.value);
-    const field = $("hoursField");
+    const endField = $("endTimeField");
+    const hoursField = $("hoursField");
+    const endInput = $("entryEndTime");
     const hoursInput = $("entryHours");
+    const hint = $("startTimeHint");
+    const hoursAuto = $("hoursAuto");
     if (!cat) return;
     if (cat.type === "flat") {
-      field.style.display = "none";
+      endField.style.display = "none";
+      hoursField.style.display = "none";
+      endInput.value = "";
       hoursInput.value = "";
       hoursInput.required = false;
     } else {
-      field.style.display = "";
+      endField.style.display = "";
+      hoursField.style.display = "";
+      hint.textContent = cat.startTime
+        ? `(starts at ${formatTime(cat.startTime)})`
+        : "(no start time set on category)";
       hoursInput.required = true;
-      if (!hoursInput.value && cat.defaultHours) {
-        hoursInput.value = cat.defaultHours;
-      }
+      recalcHoursFromEndTime();
     }
+  }
+
+  function recalcHoursFromEndTime() {
+    const sel = $("entryCategory");
+    const cat = categoryById(sel.value);
+    const endInput = $("entryEndTime");
+    const hoursInput = $("entryHours");
+    const hoursAuto = $("hoursAuto");
+    if (!cat || cat.type !== "hourly") return;
+    if (endInput.value && cat.startTime) {
+      const h = calcHoursFromTimes(cat.startTime, endInput.value);
+      hoursInput.value = (Math.round(h * 100) / 100).toString();
+      hoursAuto.textContent = "(auto from times)";
+    } else {
+      hoursAuto.textContent = "(enter manually or set times)";
+    }
+    updatePreview();
   }
 
   function updatePreview() {
@@ -288,15 +342,20 @@
       syncHoursField();
       updatePreview();
     });
-    $("entryHours").addEventListener("input", updatePreview);
+    $("entryHours").addEventListener("input", () => {
+      $("hoursAuto").textContent = "(manual)";
+      updatePreview();
+    });
+    $("entryEndTime").addEventListener("input", recalcHoursFromEndTime);
 
     $("entryForm").addEventListener("submit", (ev) => {
       ev.preventDefault();
       const cat = categoryById($("entryCategory").value);
       if (!cat) return;
       const hours = cat.type === "hourly" ? Number($("entryHours").value) || 0 : 0;
+      const endTime = cat.type === "hourly" ? $("entryEndTime").value : "";
       if (cat.type === "hourly" && hours <= 0) {
-        $("entryHours").focus();
+        $("entryEndTime").focus();
         return;
       }
       const entry = {
@@ -304,13 +363,15 @@
         date: $("entryDate").value || new Date().toISOString().slice(0, 10),
         categoryId: cat.id,
         hours,
+        endTime,
         status: $("entryStatus").value,
         note: $("entryNote").value.trim(),
       };
       state.entries.push(entry);
       save();
       $("entryNote").value = "";
-      $("entryHours").value = cat.type === "hourly" ? cat.defaultHours || "" : "";
+      $("entryEndTime").value = "";
+      $("entryHours").value = "";
       renderEntries();
       renderSummary();
       updatePreview();
@@ -362,7 +423,7 @@
       if (!cat) return;
       const field = ev.target.dataset.field;
       if (!field) return;
-      if (field === "rate" || field === "defaultHours") {
+      if (field === "rate") {
         cat[field] = Number(ev.target.value) || 0;
       } else {
         cat[field] = ev.target.value;
@@ -461,12 +522,12 @@
       if (!name) return;
       const type = document.querySelector('input[name="catType"]:checked').value;
       const rate = Number($("catRate").value) || 0;
-      const defaultHours = Number($("catDefaultHours").value) || 0;
+      const startTime = type === "hourly" ? $("catStartTime").value : "";
       if (state.editingCategoryId) {
         const cat = categoryById(state.editingCategoryId);
-        if (cat) Object.assign(cat, { name, type, rate, defaultHours });
+        if (cat) Object.assign(cat, { name, type, rate, startTime });
       } else {
-        state.categories.push({ id: uid(), name, type, rate, defaultHours });
+        state.categories.push({ id: uid(), name, type, rate, startTime });
       }
       state.editingCategoryId = null;
       save();
@@ -478,7 +539,7 @@
   function syncCatTypeUI() {
     const isFlat = document.querySelector('input[name="catType"]:checked').value === "flat";
     $("catRateLabel").textContent = isFlat ? "Flat amount per shift ($)" : "Hourly Rate ($)";
-    $("catDefaultHoursField").style.display = isFlat ? "none" : "";
+    $("catStartTimeField").style.display = isFlat ? "none" : "";
   }
 
   function openCategoryDialog(cat) {
@@ -487,7 +548,7 @@
     $("catName").value = cat?.name || "";
     document.querySelector(`input[name="catType"][value="${cat?.type || "hourly"}"]`).checked = true;
     $("catRate").value = cat?.rate ?? "";
-    $("catDefaultHours").value = cat?.defaultHours ?? "";
+    $("catStartTime").value = cat?.startTime ?? "";
     syncCatTypeUI();
     $("categoryDialog").showModal();
     $("catName").focus();

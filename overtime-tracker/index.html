@@ -63,7 +63,7 @@
               <th>Name</th>
               <th>Type</th>
               <th class="num">Rate / Flat</th>
-              <th class="num">Default Hours</th>
+              <th class="num">Start Time</th>
               <th></th>
             </tr>
           </thead>
@@ -85,8 +85,12 @@
           <label for="entryCategory">Category</label>
           <select id="entryCategory" required></select>
         </div>
+        <div class="field" id="endTimeField">
+          <label for="entryEndTime">Left at <span class="muted small" id="startTimeHint"></span></label>
+          <input type="time" id="entryEndTime" />
+        </div>
         <div class="field" id="hoursField">
-          <label for="entryHours">Hours</label>
+          <label for="entryHours">Hours <span class="muted small" id="hoursAuto"></span></label>
           <input type="number" id="entryHours" step="0.25" min="0" placeholder="e.g. 4.5" />
         </div>
         <div class="field">
@@ -175,9 +179,9 @@
         <label for="catRate"><span id="catRateLabel">Hourly Rate ($)</span></label>
         <input type="number" id="catRate" step="0.01" min="0" required />
       </div>
-      <div class="field" id="catDefaultHoursField">
-        <label for="catDefaultHours">Default hours (optional)</label>
-        <input type="number" id="catDefaultHours" step="0.25" min="0" placeholder="e.g. 8" />
+      <div class="field" id="catStartTimeField">
+        <label for="catStartTime">Start time</label>
+        <input type="time" id="catStartTime" />
       </div>
       <div class="dialog-actions">
         <button type="button" class="btn btn-ghost" id="catCancel">Cancel</button>
