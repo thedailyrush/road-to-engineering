@@ -92,7 +92,7 @@
           <div class="toggle" data-type="${cat.type}" role="switch" aria-checked="${cat.type === "flat"}" tabindex="0" title="Toggle hourly / flat">
             <span class="label-on">Hr</span>
             <span class="label-off">Flat</span>
-            <span class="knob">${cat.type === "flat" ? "F" : "$/h"}</span>
+            <span class="knob">${cat.type === "flat" ? "Flat" : "Hr"}</span>
           </div>
         </td>
         <td class="num">
