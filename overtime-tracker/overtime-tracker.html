@@ -84,7 +84,7 @@ body {
 
 .grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: 2fr 1fr;
   gap: 16px;
   padding: 16px 28px 0;
 }
@@ -129,13 +129,33 @@ body {
   text-align: left;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
+  white-space: nowrap;
 }
 .table th { color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
 .table td.num, .table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.table td.wrap { white-space: normal; }
 .table .right { text-align: right; }
 .table .strong { font-weight: 700; }
 .table tbody tr:hover { background: var(--panel-2); }
 .table tfoot td { border-top: 2px solid var(--border); border-bottom: none; }
+
+/* categories table column sizing */
+#categoriesBody td:nth-child(1),
+#categoriesTable thead th:nth-child(1) { min-width: 200px; width: 40%; }
+#categoriesBody td:nth-child(2),
+#categoriesTable thead th:nth-child(2) { width: 90px; }
+#categoriesBody td:nth-child(3),
+#categoriesTable thead th:nth-child(3) { width: 110px; }
+#categoriesBody td:nth-child(4),
+#categoriesTable thead th:nth-child(4) { width: 130px; }
+
+/* entries table column sizing */
+#entriesBody td:nth-child(1),
+#entriesTable thead th:nth-child(1) { min-width: 140px; }
+#entriesBody td:nth-child(2),
+#entriesTable thead th:nth-child(2) { min-width: 180px; }
+#entriesBody td:nth-child(6),
+#entriesTable thead th:nth-child(6) { white-space: normal; min-width: 120px; }
 
 .form {
   display: grid;
@@ -181,25 +201,23 @@ body {
 .pill.pending { color: var(--warn); border-color: rgba(245, 179, 66, 0.4); }
 
 .toggle {
-  position: relative; display: inline-block; width: 64px; height: 26px;
+  position: relative; display: inline-flex; align-items: center;
+  width: 106px; height: 28px;
   background: var(--panel-2); border-radius: 999px; border: 1px solid var(--border);
-  cursor: pointer; user-select: none;
+  cursor: pointer; user-select: none; padding: 2px;
 }
 .toggle .knob {
-  position: absolute; top: 2px; left: 2px; width: 22px; height: 20px;
+  position: absolute; top: 2px; left: 2px; width: 50px; height: 22px;
   border-radius: 999px; background: var(--primary);
-  display: grid; place-items: center; color: white; font-size: 0.65rem; font-weight: 700;
+  display: grid; place-items: center; color: white; font-size: 0.72rem; font-weight: 700;
   transition: left 0.18s ease, background 0.18s ease;
+  z-index: 1;
 }
-.toggle[data-type="flat"] .knob { left: 40px; background: var(--warn); }
-.toggle .label-on, .toggle .label-off {
-  position: absolute; top: 0; bottom: 0; display: grid; place-items: center;
-  font-size: 0.7rem; color: var(--muted); padding: 0 8px;
-}
-.toggle .label-on { left: 4px; }
-.toggle .label-off { right: 4px; }
-.toggle[data-type="flat"] .label-off { color: var(--warn); }
-.toggle[data-type="hourly"] .label-on { color: var(--primary); }
+.toggle[data-type="flat"] .knob { left: 52px; background: var(--warn); }
+.toggle .label-on { position: absolute; left: 10px; font-size: 0.7rem; color: var(--muted); z-index: 0; }
+.toggle .label-off { position: absolute; right: 10px; font-size: 0.7rem; color: var(--muted); z-index: 0; }
+.toggle[data-type="hourly"] .label-on { color: white; }
+.toggle[data-type="flat"] .label-off { color: white; }
 
 .row-edit input, .row-edit select {
   background: transparent; border: 1px solid transparent; color: var(--text);
@@ -529,7 +547,7 @@ body {
           <div class="toggle" data-type="${cat.type}" role="switch" aria-checked="${cat.type === "flat"}" tabindex="0" title="Toggle hourly / flat">
             <span class="label-on">Hr</span>
             <span class="label-off">Flat</span>
-            <span class="knob">${cat.type === "flat" ? "F" : "$/h"}</span>
+            <span class="knob">${cat.type === "flat" ? "Flat" : "Hr"}</span>
           </div>
         </td>
         <td class="num">
