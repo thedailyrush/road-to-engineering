@@ -168,7 +168,7 @@ body {
 .table th.check, .table td.check { width: 32px; padding-left: 10px; padding-right: 4px; }
 .table .check input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--primary); margin: 0; }
 
-/* ---- Form ---- */
+/* ---- Form (auth + category dialog base) ---- */
 .form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .form .field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .form .field.full { grid-column: 1 / -1; }
@@ -185,6 +185,75 @@ body {
   border: 1px dashed var(--border);
 }
 .preview-amount { font-weight: 700; font-size: 1.1rem; }
+
+/* ---- Entry form: auto-responsive card fields ---- */
+/* columns auto-reflow: 2-up on phones, 3-up on tablet, more on desktop */
+#entryForm {
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 10px;
+}
+
+/* each field with an input/select becomes a self-contained card */
+#entryForm .field:has(input),
+#entryForm .field:has(select) {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 11px 14px 13px;
+  gap: 4px;
+  transition: border-color .15s;
+}
+#entryForm .field:has(input):focus-within,
+#entryForm .field:has(select):focus-within {
+  border-color: var(--primary);
+}
+
+/* label inside the card: compact uppercase */
+#entryForm .field:has(input) label,
+#entryForm .field:has(select) label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+}
+
+/* input/select inside the card: borderless, transparent */
+#entryForm input,
+#entryForm select {
+  background: transparent;
+  border: none;
+  padding: 3px 0 0;
+  font-size: 0.97rem;
+  border-radius: 0;
+  color: var(--text);
+  outline: none;
+  width: 100%;
+}
+#entryForm input:focus,
+#entryForm select:focus {
+  background: transparent;
+  border-color: transparent;
+}
+
+/* preview card: horizontal label + amount */
+#entryForm .field.preview {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-style: dashed;
+  gap: 8px;
+}
+#entryForm .field.preview .muted { font-size: 0.83rem; }
+
+/* submit button field: no card wrapper */
+#entryForm .field:has(button) {
+  background: transparent;
+  border: none;
+  padding: 2px 0 0;
+  border-radius: 0;
+}
 
 /* ---- Filters ---- */
 .filters { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -356,9 +425,6 @@ body {
   .summary { grid-template-columns: repeat(2, 1fr); gap: 8px; padding-bottom: 12px; }
   .stat { padding: 10px 12px; }
   .stat .value { font-size: 1.15rem; }
-
-  /* form stays 2-column on mobile; inputs have width:100% so they won't overflow */
-  .form { gap: 10px; }
 
   /* filters: stack */
   .filters { flex-direction: column; }
