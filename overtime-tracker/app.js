@@ -465,11 +465,38 @@
     return state.categories.find((c) => c.id === id);
   }
 
+  // Hours worked past 7 PM are paid at the bumped rate.
+  const LATE_RATE_THRESHOLD_HOUR = 19;
+  const LATE_HOURLY_RATE = 375;
+
+  function calcHourlyEarned(baseRate, totalHours, effectiveStart, endTime) {
+    if (totalHours <= 0) return 0;
+    if (!effectiveStart || !endTime) return baseRate * totalHours;
+    const [sh, sm] = effectiveStart.split(":").map(Number);
+    const [eh, em] = endTime.split(":").map(Number);
+    const startMin = sh * 60 + sm;
+    let endMin = eh * 60 + em;
+    if (endMin <= startMin) endMin += 24 * 60;
+    const totalMin = endMin - startMin;
+    if (totalMin <= 0) return baseRate * totalHours;
+    const thresholdMin = LATE_RATE_THRESHOLD_HOUR * 60;
+    const lateMin = Math.max(0, endMin - Math.max(startMin, thresholdMin));
+    const lateHours = totalHours * (lateMin / totalMin);
+    const regularHours = totalHours - lateHours;
+    return regularHours * baseRate + lateHours * LATE_HOURLY_RATE;
+  }
+
   function calcEarned(entry) {
     const cat = categoryById(entry.categoryId);
     if (!cat) return 0;
     if (cat.type === "flat") return Number(cat.rate) || 0;
-    return (Number(cat.rate) || 0) * (Number(entry.hours) || 0);
+    const effectiveStart = cat.flexibleTimes ? entry.startTime : cat.startTime;
+    return calcHourlyEarned(
+      Number(cat.rate) || 0,
+      Number(entry.hours) || 0,
+      effectiveStart,
+      entry.endTime
+    );
   }
 
   function calcHoursFromTimes(start, end) {
@@ -929,10 +956,16 @@
       $("entryPreview").textContent = fmtMoney(0);
       return;
     }
+    if (cat.type === "flat") {
+      $("entryPreview").textContent = fmtMoney(Number(cat.rate) || 0);
+      return;
+    }
     const hours = Number($("entryHours").value) || 0;
-    const earned =
-      cat.type === "flat" ? Number(cat.rate) || 0 : (Number(cat.rate) || 0) * hours;
-    $("entryPreview").textContent = fmtMoney(earned);
+    const effectiveStart = cat.flexibleTimes ? $("entryStartTime").value : cat.startTime;
+    const endTime = $("entryEndTime").value;
+    $("entryPreview").textContent = fmtMoney(
+      calcHourlyEarned(Number(cat.rate) || 0, hours, effectiveStart, endTime)
+    );
   }
 
   function resetEntryForm() {
