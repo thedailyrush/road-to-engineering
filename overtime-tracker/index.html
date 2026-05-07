@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Clinical Incentive / Overtime Tracker</title>
+  <title>CI Tracker</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -12,7 +12,7 @@
     <div class="card auth-card">
       <div class="auth-logo">
         <div class="logo">CI</div>
-        <h1>Overtime &amp; Incentive Tracker</h1>
+        <h1>CI Tracker</h1>
         <p class="muted small" id="authSubtitle">Sign in to access your data</p>
       </div>
       <form id="authForm" class="form">
@@ -42,10 +42,7 @@
     <header class="topbar">
       <div class="brand">
         <div class="logo">CI</div>
-        <div>
-          <h1>Overtime &amp; Incentive Tracker</h1>
-          <p class="muted">Track clinical incentive shifts, overtime hours, and flat-pay calls.</p>
-        </div>
+        <h1>CI Tracker</h1>
       </div>
       <div class="actions">
         <span class="user-chip muted small" id="userChip"></span>
@@ -80,7 +77,122 @@
       </div>
     </section>
 
-    <main class="grid">
+    <nav class="tabs" id="tabNav" role="tablist">
+      <button class="tab active" type="button" role="tab" data-tab="shifts">Shifts</button>
+      <button class="tab" type="button" role="tab" data-tab="categories">Categories</button>
+    </nav>
+
+    <div id="tab-shifts" class="tab-pane active">
+      <main class="grid">
+        <section class="card panel" id="entriesPanel">
+          <div class="panel-header">
+            <h2>Shift Log</h2>
+            <div class="filters">
+              <input type="search" id="searchInput" placeholder="Search notes / category..." />
+              <select id="filterMonth">
+                <option value="">All months</option>
+              </select>
+              <select id="filterCategory">
+                <option value="">All categories</option>
+              </select>
+              <select id="filterStatus">
+                <option value="">All statuses</option>
+                <option value="pending">Pending</option>
+                <option value="submitted">Submitted</option>
+                <option value="deposited">Deposited</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="bulk-bar" id="bulkBar" hidden>
+            <span class="bulk-count"><strong id="bulkCount">0</strong> selected</span>
+            <select id="bulkStatus">
+              <option value="pending">Pending</option>
+              <option value="submitted">Submitted</option>
+              <option value="deposited">Deposited</option>
+            </select>
+            <button type="button" class="btn btn-primary btn-sm" id="bulkApply">Apply status</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="bulkClear">Clear</button>
+          </div>
+
+          <div class="table-wrap">
+            <table class="table" id="entriesTable">
+              <thead>
+                <tr>
+                  <th class="check"><input type="checkbox" id="selectAllEntries" title="Select all visible" /></th>
+                  <th>Date</th>
+                  <th>Category</th>
+                  <th class="num">Hours</th>
+                  <th class="num">Earned</th>
+                  <th>Status</th>
+                  <th>Note</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="entriesBody"></tbody>
+              <tfoot>
+                <tr>
+                  <td></td>
+                  <td colspan="2" class="right strong">Totals</td>
+                  <td class="num strong" id="footHours">0.0</td>
+                  <td class="num strong" id="footTotal">$0.00</td>
+                  <td colspan="3"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </section>
+
+        <section class="card panel" id="entryPanel">
+          <div class="panel-header">
+            <h2>Log a Shift</h2>
+          </div>
+          <form id="entryForm" class="form">
+            <div class="field">
+              <label for="entryDate">Date</label>
+              <input type="date" id="entryDate" required />
+            </div>
+            <div class="field">
+              <label for="entryCategory">Category</label>
+              <select id="entryCategory" required></select>
+            </div>
+            <div class="field" id="startTimeField" style="display:none">
+              <label for="entryStartTime">Started at</label>
+              <input type="time" id="entryStartTime" />
+            </div>
+            <div class="field" id="endTimeField">
+              <label for="entryEndTime">Left at <span class="muted small" id="startTimeHint"></span></label>
+              <input type="time" id="entryEndTime" />
+            </div>
+            <div class="field" id="hoursField">
+              <label for="entryHours">Hours <span class="muted small" id="hoursAuto"></span></label>
+              <input type="number" id="entryHours" step="0.25" min="0" placeholder="e.g. 4.5" />
+            </div>
+            <div class="field">
+              <label for="entryStatus">Status</label>
+              <select id="entryStatus">
+                <option value="pending">Pending</option>
+                <option value="submitted">Submitted</option>
+                <option value="deposited">Deposited</option>
+              </select>
+            </div>
+            <div class="field full">
+              <label for="entryNote">Note (optional)</label>
+              <input type="text" id="entryNote" placeholder="e.g. Bellevue ED, covered for J. Smith" />
+            </div>
+            <div class="field full preview">
+              <span class="muted small">Estimated payout</span>
+              <span class="preview-amount" id="entryPreview">$0.00</span>
+            </div>
+            <div class="field full">
+              <button type="submit" class="btn btn-primary block">Add Entry</button>
+            </div>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <div id="tab-categories" class="tab-pane">
       <section class="card panel" id="categoriesPanel">
         <div class="panel-header">
           <h2>Categories</h2>
@@ -105,96 +217,7 @@
           </table>
         </div>
       </section>
-
-      <section class="card panel" id="entryPanel">
-        <div class="panel-header">
-          <h2>Log a Shift</h2>
-        </div>
-        <form id="entryForm" class="form">
-          <div class="field">
-            <label for="entryDate">Date</label>
-            <input type="date" id="entryDate" required />
-          </div>
-          <div class="field">
-            <label for="entryCategory">Category</label>
-            <select id="entryCategory" required></select>
-          </div>
-          <div class="field" id="startTimeField" style="display:none">
-            <label for="entryStartTime">Started at</label>
-            <input type="time" id="entryStartTime" />
-          </div>
-          <div class="field" id="endTimeField">
-            <label for="entryEndTime">Left at <span class="muted small" id="startTimeHint"></span></label>
-            <input type="time" id="entryEndTime" />
-          </div>
-          <div class="field" id="hoursField">
-            <label for="entryHours">Hours <span class="muted small" id="hoursAuto"></span></label>
-            <input type="number" id="entryHours" step="0.25" min="0" placeholder="e.g. 4.5" />
-          </div>
-          <div class="field">
-            <label for="entryStatus">Status</label>
-            <select id="entryStatus">
-              <option value="pending">Pending</option>
-              <option value="submitted">Submitted</option>
-              <option value="deposited">Deposited</option>
-            </select>
-          </div>
-          <div class="field full">
-            <label for="entryNote">Note (optional)</label>
-            <input type="text" id="entryNote" placeholder="e.g. Bellevue ED, covered for J. Smith" />
-          </div>
-          <div class="field full preview">
-            <span class="muted small">Estimated payout</span>
-            <span class="preview-amount" id="entryPreview">$0.00</span>
-          </div>
-          <div class="field full">
-            <button type="submit" class="btn btn-primary block">Add Entry</button>
-          </div>
-        </form>
-      </section>
-    </main>
-
-    <section class="card panel" id="entriesPanel">
-      <div class="panel-header">
-        <h2>Shift Log</h2>
-        <div class="filters">
-          <input type="search" id="searchInput" placeholder="Search notes / category..." />
-          <select id="filterCategory">
-            <option value="">All categories</option>
-          </select>
-          <select id="filterStatus">
-            <option value="">All statuses</option>
-            <option value="pending">Pending</option>
-            <option value="submitted">Submitted</option>
-            <option value="deposited">Deposited</option>
-          </select>
-        </div>
-      </div>
-      <div class="table-wrap">
-        <table class="table" id="entriesTable">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Category</th>
-              <th class="num">Hours</th>
-              <th class="num">Earned</th>
-              <th>Status</th>
-              <th>Note</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="entriesBody"></tbody>
-          <tfoot>
-            <tr>
-              <td colspan="2" class="right strong">Totals</td>
-              <td class="num strong" id="footHours">0.0</td>
-              <td class="num strong" id="footTotal">$0.00</td>
-              <td colspan="3"></td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    </section>
+    </div>
 
     <!-- Category modal -->
     <dialog id="categoryDialog" class="dialog">

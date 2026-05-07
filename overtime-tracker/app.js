@@ -159,9 +159,11 @@
   const state = {
     categories: [],
     entries: [],
-    filter: { search: "", category: "", status: "" },
+    filter: { search: "", category: "", status: "", month: "" },
     editingCategoryId: null,
     user: null,
+    selectedEntries: new Set(),
+    visibleEntryIds: new Set(),
   };
 
   const $ = (id) => document.getElementById(id);
@@ -571,9 +573,10 @@
     body.innerHTML = "";
 
     let rows = [...state.entries].sort((a, b) => (a.date < b.date ? 1 : -1));
-    const { search, category, status } = state.filter;
+    const { search, category, status, month } = state.filter;
     if (category) rows = rows.filter((e) => e.categoryId === category);
     if (status) rows = rows.filter((e) => e.status === status);
+    if (month) rows = rows.filter((e) => e.date && e.date.startsWith(month));
     if (search) {
       const q = search.toLowerCase();
       rows = rows.filter((e) => {
@@ -585,9 +588,11 @@
       });
     }
 
+    state.visibleEntryIds = new Set(rows.map((e) => e.id));
+
     if (rows.length === 0) {
       const isEmpty = state.entries.length === 0;
-      body.innerHTML = `<tr><td colspan="7" class="empty">
+      body.innerHTML = `<tr><td colspan="8" class="empty">
         ${isEmpty
           ? `No entries yet.<br><br>
              <button class="btn btn-primary" id="loadSheetBtn">Load historical data from Google Sheet</button>`
@@ -610,6 +615,8 @@
           }
         });
       }
+      updateSelectAll();
+      updateBulkBar();
       return;
     }
 
@@ -632,7 +639,9 @@
             ? `${fmtHours(hours)} <span class="muted small">(${formatTime(effectiveStart)}–${formatTime(e.endTime)})</span>`
             : fmtHours(hours)
           : "—";
+      const checked = state.selectedEntries.has(e.id) ? " checked" : "";
       tr.innerHTML = `
+        <td class="check"><input type="checkbox" class="entry-select"${checked} /></td>
         <td>${formatDate(e.date)}</td>
         <td>
           ${cat ? escapeHtml(cat.name) : "<em>(deleted)</em>"}
@@ -651,6 +660,88 @@
     }
     $("footHours").textContent = fmtHours(totalHours);
     $("footTotal").textContent = fmtMoney(totalEarned);
+    updateSelectAll();
+    updateBulkBar();
+  }
+
+  function updateSelectAll() {
+    const all = $("selectAllEntries");
+    if (!all) return;
+    const visible = state.visibleEntryIds;
+    if (visible.size === 0) {
+      all.checked = false;
+      all.indeterminate = false;
+      return;
+    }
+    let selectedCount = 0;
+    for (const id of visible) if (state.selectedEntries.has(id)) selectedCount++;
+    all.checked = selectedCount === visible.size;
+    all.indeterminate = selectedCount > 0 && selectedCount < visible.size;
+  }
+
+  function updateBulkBar() {
+    const bar = $("bulkBar");
+    if (!bar) return;
+    const count = state.selectedEntries.size;
+    $("bulkCount").textContent = String(count);
+    bar.hidden = count === 0;
+  }
+
+  async function bulkApplyStatus(newStatus) {
+    const ids = [...state.selectedEntries];
+    if (ids.length === 0) return;
+    for (const id of ids) {
+      const entry = state.entries.find((e) => e.id === id);
+      if (entry) entry.status = newStatus;
+    }
+    const { error } = await sb
+      .from("entries")
+      .update({ status: newStatus })
+      .in("id", ids);
+    if (error) {
+      alert("Bulk update failed: " + error.message);
+      return;
+    }
+    state.selectedEntries.clear();
+    renderEntries();
+    renderSummary();
+  }
+
+  function buildMonthOptions() {
+    const sel = $("filterMonth");
+    if (!sel) return;
+    const months = new Set();
+    for (const e of state.entries) {
+      if (e.date) months.add(e.date.slice(0, 7));
+    }
+    const sorted = [...months].sort().reverse();
+    const prev = state.filter.month;
+    sel.innerHTML = '<option value="">All months</option>';
+    for (const m of sorted) {
+      const [y, mo] = m.split("-");
+      const dt = new Date(Number(y), Number(mo) - 1, 1);
+      const label = dt.toLocaleString(undefined, { month: "long", year: "numeric" });
+      const opt = document.createElement("option");
+      opt.value = m;
+      opt.textContent = label;
+      sel.appendChild(opt);
+    }
+    if (prev && months.has(prev)) sel.value = prev;
+    else state.filter.month = "";
+  }
+
+  function wireTabs() {
+    document.querySelectorAll(".tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const target = tab.dataset.tab;
+        document.querySelectorAll(".tab").forEach((t) =>
+          t.classList.toggle("active", t === tab)
+        );
+        document.querySelectorAll(".tab-pane").forEach((p) =>
+          p.classList.toggle("active", p.id === `tab-${target}`)
+        );
+      });
+    });
   }
 
   function renderSummary() {
@@ -676,6 +767,7 @@
   function renderAll() {
     renderCategories();
     renderCategoryDropdowns();
+    buildMonthOptions();
     renderEntries();
     renderSummary();
   }
@@ -874,9 +966,56 @@
       }
     });
 
+    // Entry selection (bulk)
+    $("entriesBody").addEventListener("change", (ev) => {
+      const cb = ev.target.closest(".entry-select");
+      if (!cb) return;
+      const row = cb.closest("tr[data-id]");
+      if (!row) return;
+      const id = row.dataset.id;
+      if (cb.checked) state.selectedEntries.add(id);
+      else state.selectedEntries.delete(id);
+      updateSelectAll();
+      updateBulkBar();
+    });
+
+    $("selectAllEntries").addEventListener("change", (ev) => {
+      const visible = state.visibleEntryIds;
+      if (ev.target.checked) {
+        visible.forEach((id) => state.selectedEntries.add(id));
+      } else {
+        visible.forEach((id) => state.selectedEntries.delete(id));
+      }
+      renderEntries();
+    });
+
+    $("bulkApply").addEventListener("click", async () => {
+      const newStatus = $("bulkStatus").value;
+      const count = state.selectedEntries.size;
+      if (!confirm(`Mark ${count} selected entr${count === 1 ? "y" : "ies"} as "${newStatus}"?`)) return;
+      const btn = $("bulkApply");
+      btn.disabled = true;
+      btn.textContent = "Applying…";
+      try {
+        await bulkApplyStatus(newStatus);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Apply status";
+      }
+    });
+
+    $("bulkClear").addEventListener("click", () => {
+      state.selectedEntries.clear();
+      renderEntries();
+    });
+
     // Filters
     $("searchInput").addEventListener("input", (ev) => {
       state.filter.search = ev.target.value;
+      renderEntries();
+    });
+    $("filterMonth").addEventListener("change", (ev) => {
+      state.filter.month = ev.target.value;
       renderEntries();
     });
     $("filterCategory").addEventListener("change", (ev) => {
@@ -991,6 +1130,7 @@
   async function init() {
     wireAuth();
     wire();
+    wireTabs();
 
     const { data } = await sb.auth.getSession();
     const session = data?.session;
