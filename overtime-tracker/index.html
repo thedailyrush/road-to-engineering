@@ -233,6 +233,26 @@
       </div>
     </div>
 
+    <!-- Page 4: Metrics -->
+    <div id="tab-metrics" class="tab-pane">
+      <div class="page-pad metrics-pad">
+
+        <section class="card panel">
+          <div class="panel-header">
+            <h2>Monthly Overview</h2>
+            <select id="metricsYear" class="metrics-year-sel"></select>
+          </div>
+          <div id="metricsMonthly"></div>
+        </section>
+
+        <section class="card panel">
+          <div class="panel-header"><h2>Category Breakdown</h2></div>
+          <div id="metricsCategories"></div>
+        </section>
+
+      </div>
+    </div>
+
     <!-- Floating bottom nav -->
     <nav class="bottom-nav" id="bottomNav" role="tablist">
       <button class="nav-item active" type="button" role="tab" data-tab="home">
@@ -253,6 +273,15 @@
           <circle cx="3.5" cy="18" r="0.5" fill="currentColor"/>
         </svg>
         <span>Shifts</span>
+      </button>
+      <button class="nav-item" type="button" role="tab" data-tab="metrics">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"/>
+          <line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+          <line x1="2" y1="20" x2="22" y2="20"/>
+        </svg>
+        <span>Metrics</span>
       </button>
       <button class="nav-item" type="button" role="tab" data-tab="categories">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
