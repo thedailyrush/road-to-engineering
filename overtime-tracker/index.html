@@ -7,197 +7,233 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <div class="logo">CI</div>
-      <div>
+  <!-- Auth overlay -->
+  <div id="authOverlay" class="auth-overlay" style="display:none">
+    <div class="card auth-card">
+      <div class="auth-logo">
+        <div class="logo">CI</div>
         <h1>Overtime &amp; Incentive Tracker</h1>
-        <p class="muted">Track clinical incentive shifts, overtime hours, and flat-pay calls.</p>
+        <p class="muted small" id="authSubtitle">Sign in to access your data</p>
       </div>
+      <form id="authForm" class="form">
+        <div class="field full">
+          <label for="authEmail">Email</label>
+          <input type="email" id="authEmail" autocomplete="email" required />
+        </div>
+        <div class="field full">
+          <label for="authPassword">Password</label>
+          <input type="password" id="authPassword" autocomplete="current-password" required minlength="6" />
+        </div>
+        <div class="field full" id="authError" style="display:none">
+          <span class="error-text"></span>
+        </div>
+        <div class="field full">
+          <button type="submit" class="btn btn-primary block" id="authSubmitBtn">Sign In</button>
+        </div>
+        <div class="field full auth-toggle-row">
+          <button type="button" class="btn btn-ghost" id="authToggleBtn">Don't have an account? Sign up</button>
+        </div>
+      </form>
     </div>
-    <div class="actions">
-      <button id="exportBtn" class="btn btn-ghost" title="Download data as JSON">Export</button>
-      <button id="importBtn" class="btn btn-ghost" title="Load data from JSON">Import</button>
-      <input type="file" id="importFile" accept="application/json" hidden />
-      <button id="resetBtn" class="btn btn-danger-ghost" title="Reset all data">Reset</button>
-    </div>
-  </header>
+  </div>
 
-  <section class="summary">
-    <div class="card stat">
-      <span class="label">Total Earned</span>
-      <span class="value" id="statTotal">$0.00</span>
-    </div>
-    <div class="card stat">
-      <span class="label">Pending</span>
-      <span class="value" id="statPending">$0.00</span>
-    </div>
-    <div class="card stat">
-      <span class="label">Deposited</span>
-      <span class="value" id="statDeposited">$0.00</span>
-    </div>
-    <div class="card stat">
-      <span class="label">Overtime Hours</span>
-      <span class="value" id="statHours">0.0</span>
-    </div>
-    <div class="card stat">
-      <span class="label">Shifts Logged</span>
-      <span class="value" id="statShifts">0</span>
-    </div>
-  </section>
-
-  <main class="grid">
-    <section class="card panel" id="categoriesPanel">
-      <div class="panel-header">
-        <h2>Categories</h2>
-        <button id="addCategoryBtn" class="btn btn-primary">+ Add Category</button>
+  <!-- Main app shell -->
+  <div id="appShell" style="display:none">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">CI</div>
+        <div>
+          <h1>Overtime &amp; Incentive Tracker</h1>
+          <p class="muted">Track clinical incentive shifts, overtime hours, and flat-pay calls.</p>
+        </div>
       </div>
-      <p class="muted small">
-        Each category can be <strong>Hourly</strong> (rate &times; hours) or <strong>Flat</strong> (per shift).
-        Click the toggle on a row to switch.
-      </p>
-      <div class="table-wrap">
-        <table class="table" id="categoriesTable">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Type</th>
-              <th class="num">Rate / Flat</th>
-              <th class="num">Start Time</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="categoriesBody"></tbody>
-        </table>
+      <div class="actions">
+        <span class="user-chip muted small" id="userChip"></span>
+        <button id="exportBtn" class="btn btn-ghost" title="Download data as JSON">Export</button>
+        <button id="importBtn" class="btn btn-ghost" title="Load data from JSON">Import</button>
+        <input type="file" id="importFile" accept="application/json" hidden />
+        <button id="resetBtn" class="btn btn-danger-ghost" title="Reset all data">Reset</button>
+        <button id="signOutBtn" class="btn btn-ghost" title="Sign out">Sign out</button>
+      </div>
+    </header>
+
+    <section class="summary">
+      <div class="card stat">
+        <span class="label">Total Earned</span>
+        <span class="value" id="statTotal">$0.00</span>
+      </div>
+      <div class="card stat">
+        <span class="label">Pending</span>
+        <span class="value" id="statPending">$0.00</span>
+      </div>
+      <div class="card stat">
+        <span class="label">Deposited</span>
+        <span class="value" id="statDeposited">$0.00</span>
+      </div>
+      <div class="card stat">
+        <span class="label">Overtime Hours</span>
+        <span class="value" id="statHours">0.0</span>
+      </div>
+      <div class="card stat">
+        <span class="label">Shifts Logged</span>
+        <span class="value" id="statShifts">0</span>
       </div>
     </section>
 
-    <section class="card panel" id="entryPanel">
+    <main class="grid">
+      <section class="card panel" id="categoriesPanel">
+        <div class="panel-header">
+          <h2>Categories</h2>
+          <button id="addCategoryBtn" class="btn btn-primary">+ Add Category</button>
+        </div>
+        <p class="muted small">
+          Each category can be <strong>Hourly</strong> (rate &times; hours) or <strong>Flat</strong> (per shift).
+          Click the toggle on a row to switch.
+        </p>
+        <div class="table-wrap">
+          <table class="table" id="categoriesTable">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th class="num">Rate / Flat</th>
+                <th class="num">Start Time</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="categoriesBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card panel" id="entryPanel">
+        <div class="panel-header">
+          <h2>Log a Shift</h2>
+        </div>
+        <form id="entryForm" class="form">
+          <div class="field">
+            <label for="entryDate">Date</label>
+            <input type="date" id="entryDate" required />
+          </div>
+          <div class="field">
+            <label for="entryCategory">Category</label>
+            <select id="entryCategory" required></select>
+          </div>
+          <div class="field" id="startTimeField" style="display:none">
+            <label for="entryStartTime">Started at</label>
+            <input type="time" id="entryStartTime" />
+          </div>
+          <div class="field" id="endTimeField">
+            <label for="entryEndTime">Left at <span class="muted small" id="startTimeHint"></span></label>
+            <input type="time" id="entryEndTime" />
+          </div>
+          <div class="field" id="hoursField">
+            <label for="entryHours">Hours <span class="muted small" id="hoursAuto"></span></label>
+            <input type="number" id="entryHours" step="0.25" min="0" placeholder="e.g. 4.5" />
+          </div>
+          <div class="field">
+            <label for="entryStatus">Status</label>
+            <select id="entryStatus">
+              <option value="pending">Pending</option>
+              <option value="submitted">Submitted</option>
+              <option value="deposited">Deposited</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label for="entryNote">Note (optional)</label>
+            <input type="text" id="entryNote" placeholder="e.g. Bellevue ED, covered for J. Smith" />
+          </div>
+          <div class="field full preview">
+            <span class="muted small">Estimated payout</span>
+            <span class="preview-amount" id="entryPreview">$0.00</span>
+          </div>
+          <div class="field full">
+            <button type="submit" class="btn btn-primary block">Add Entry</button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <section class="card panel" id="entriesPanel">
       <div class="panel-header">
-        <h2>Log a Shift</h2>
-      </div>
-      <form id="entryForm" class="form">
-        <div class="field">
-          <label for="entryDate">Date</label>
-          <input type="date" id="entryDate" required />
-        </div>
-        <div class="field">
-          <label for="entryCategory">Category</label>
-          <select id="entryCategory" required></select>
-        </div>
-        <div class="field" id="startTimeField" style="display:none">
-          <label for="entryStartTime">Started at</label>
-          <input type="time" id="entryStartTime" />
-        </div>
-        <div class="field" id="endTimeField">
-          <label for="entryEndTime">Left at <span class="muted small" id="startTimeHint"></span></label>
-          <input type="time" id="entryEndTime" />
-        </div>
-        <div class="field" id="hoursField">
-          <label for="entryHours">Hours <span class="muted small" id="hoursAuto"></span></label>
-          <input type="number" id="entryHours" step="0.25" min="0" placeholder="e.g. 4.5" />
-        </div>
-        <div class="field">
-          <label for="entryStatus">Status</label>
-          <select id="entryStatus">
+        <h2>Shift Log</h2>
+        <div class="filters">
+          <input type="search" id="searchInput" placeholder="Search notes / category..." />
+          <select id="filterCategory">
+            <option value="">All categories</option>
+          </select>
+          <select id="filterStatus">
+            <option value="">All statuses</option>
             <option value="pending">Pending</option>
             <option value="submitted">Submitted</option>
             <option value="deposited">Deposited</option>
           </select>
         </div>
-        <div class="field full">
-          <label for="entryNote">Note (optional)</label>
-          <input type="text" id="entryNote" placeholder="e.g. Bellevue ED, covered for J. Smith" />
+      </div>
+      <div class="table-wrap">
+        <table class="table" id="entriesTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Category</th>
+              <th class="num">Hours</th>
+              <th class="num">Earned</th>
+              <th>Status</th>
+              <th>Note</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="entriesBody"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2" class="right strong">Totals</td>
+              <td class="num strong" id="footHours">0.0</td>
+              <td class="num strong" id="footTotal">$0.00</td>
+              <td colspan="3"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+
+    <!-- Category modal -->
+    <dialog id="categoryDialog" class="dialog">
+      <form method="dialog" id="categoryForm" class="form">
+        <h3 id="categoryDialogTitle">Add Category</h3>
+        <div class="field">
+          <label for="catName">Name</label>
+          <input type="text" id="catName" required placeholder="e.g. Bellevue Long Call" />
         </div>
-        <div class="field full preview">
-          <span class="muted small">Estimated payout</span>
-          <span class="preview-amount" id="entryPreview">$0.00</span>
+        <div class="field">
+          <label>Type</label>
+          <div class="seg">
+            <input type="radio" id="catTypeHourly" name="catType" value="hourly" checked />
+            <label for="catTypeHourly">Hourly</label>
+            <input type="radio" id="catTypeFlat" name="catType" value="flat" />
+            <label for="catTypeFlat">Flat</label>
+          </div>
         </div>
-        <div class="field full">
-          <button type="submit" class="btn btn-primary block">Add Entry</button>
+        <div class="field">
+          <label for="catRate"><span id="catRateLabel">Hourly Rate ($)</span></label>
+          <input type="number" id="catRate" step="0.01" min="0" required />
+        </div>
+        <div class="field" id="catStartTimeField">
+          <label for="catStartTime">Start time</label>
+          <input type="time" id="catStartTime" />
+        </div>
+        <div class="dialog-actions">
+          <button type="button" class="btn btn-ghost" id="catCancel">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="catSave">Save</button>
         </div>
       </form>
-    </section>
-  </main>
+    </dialog>
 
-  <section class="card panel" id="entriesPanel">
-    <div class="panel-header">
-      <h2>Shift Log</h2>
-      <div class="filters">
-        <input type="search" id="searchInput" placeholder="Search notes / category..." />
-        <select id="filterCategory">
-          <option value="">All categories</option>
-        </select>
-        <select id="filterStatus">
-          <option value="">All statuses</option>
-          <option value="pending">Pending</option>
-          <option value="submitted">Submitted</option>
-          <option value="deposited">Deposited</option>
-        </select>
-      </div>
-    </div>
-    <div class="table-wrap">
-      <table class="table" id="entriesTable">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Category</th>
-            <th class="num">Hours</th>
-            <th class="num">Earned</th>
-            <th>Status</th>
-            <th>Note</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="entriesBody"></tbody>
-        <tfoot>
-          <tr>
-            <td colspan="2" class="right strong">Totals</td>
-            <td class="num strong" id="footHours">0.0</td>
-            <td class="num strong" id="footTotal">$0.00</td>
-            <td colspan="3"></td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  </section>
+    <footer class="foot muted small">
+      Synced to the cloud. Use Export to keep an offline backup.
+    </footer>
+  </div>
 
-  <!-- Category modal -->
-  <dialog id="categoryDialog" class="dialog">
-    <form method="dialog" id="categoryForm" class="form">
-      <h3 id="categoryDialogTitle">Add Category</h3>
-      <div class="field">
-        <label for="catName">Name</label>
-        <input type="text" id="catName" required placeholder="e.g. Bellevue Long Call" />
-      </div>
-      <div class="field">
-        <label>Type</label>
-        <div class="seg">
-          <input type="radio" id="catTypeHourly" name="catType" value="hourly" checked />
-          <label for="catTypeHourly">Hourly</label>
-          <input type="radio" id="catTypeFlat" name="catType" value="flat" />
-          <label for="catTypeFlat">Flat</label>
-        </div>
-      </div>
-      <div class="field">
-        <label for="catRate"><span id="catRateLabel">Hourly Rate ($)</span></label>
-        <input type="number" id="catRate" step="0.01" min="0" required />
-      </div>
-      <div class="field" id="catStartTimeField">
-        <label for="catStartTime">Start time</label>
-        <input type="time" id="catStartTime" />
-      </div>
-      <div class="dialog-actions">
-        <button type="button" class="btn btn-ghost" id="catCancel">Cancel</button>
-        <button type="submit" class="btn btn-primary" id="catSave">Save</button>
-      </div>
-    </form>
-  </dialog>
-
-  <footer class="foot muted small">
-    Data is saved locally in your browser. Use Export to back it up.
-  </footer>
-
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
