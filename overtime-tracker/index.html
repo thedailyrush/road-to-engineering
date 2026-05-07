@@ -54,36 +54,84 @@
       </div>
     </header>
 
-    <section class="summary">
-      <div class="card stat">
-        <span class="label">Total Earned</span>
-        <span class="value" id="statTotal">$0.00</span>
-      </div>
-      <div class="card stat">
-        <span class="label">Pending</span>
-        <span class="value" id="statPending">$0.00</span>
-      </div>
-      <div class="card stat">
-        <span class="label">Deposited</span>
-        <span class="value" id="statDeposited">$0.00</span>
-      </div>
-      <div class="card stat">
-        <span class="label">Overtime Hours</span>
-        <span class="value" id="statHours">0.0</span>
-      </div>
-      <div class="card stat">
-        <span class="label">Shifts Logged</span>
-        <span class="value" id="statShifts">0</span>
-      </div>
-    </section>
+    <!-- Page 1: Log a Shift + Summary -->
+    <div id="tab-home" class="tab-pane active">
+      <section class="summary">
+        <div class="card stat">
+          <span class="label">Total Earned</span>
+          <span class="value" id="statTotal">$0.00</span>
+        </div>
+        <div class="card stat">
+          <span class="label">Pending</span>
+          <span class="value" id="statPending">$0.00</span>
+        </div>
+        <div class="card stat">
+          <span class="label">Deposited</span>
+          <span class="value" id="statDeposited">$0.00</span>
+        </div>
+        <div class="card stat">
+          <span class="label">Overtime Hours</span>
+          <span class="value" id="statHours">0.0</span>
+        </div>
+        <div class="card stat">
+          <span class="label">Shifts Logged</span>
+          <span class="value" id="statShifts">0</span>
+        </div>
+      </section>
 
-    <nav class="tabs" id="tabNav" role="tablist">
-      <button class="tab active" type="button" role="tab" data-tab="shifts">Shifts</button>
-      <button class="tab" type="button" role="tab" data-tab="categories">Categories</button>
-    </nav>
+      <div class="page-pad center-form">
+        <section class="card panel" id="entryPanel">
+          <div class="panel-header">
+            <h2>Log a Shift</h2>
+          </div>
+          <form id="entryForm" class="form">
+            <div class="field">
+              <label for="entryDate">Date</label>
+              <input type="date" id="entryDate" required />
+            </div>
+            <div class="field">
+              <label for="entryCategory">Category</label>
+              <select id="entryCategory" required></select>
+            </div>
+            <div class="field" id="startTimeField" style="display:none">
+              <label for="entryStartTime">Started at</label>
+              <input type="time" id="entryStartTime" />
+            </div>
+            <div class="field" id="endTimeField">
+              <label for="entryEndTime">Left at <span class="muted small" id="startTimeHint"></span></label>
+              <input type="time" id="entryEndTime" />
+            </div>
+            <div class="field" id="hoursField">
+              <label for="entryHours">Hours <span class="muted small" id="hoursAuto"></span></label>
+              <input type="number" id="entryHours" step="0.25" min="0" placeholder="e.g. 4.5" />
+            </div>
+            <div class="field">
+              <label for="entryStatus">Status</label>
+              <select id="entryStatus">
+                <option value="pending">Pending</option>
+                <option value="submitted">Submitted</option>
+                <option value="deposited">Deposited</option>
+              </select>
+            </div>
+            <div class="field full">
+              <label for="entryNote">Note (optional)</label>
+              <input type="text" id="entryNote" placeholder="e.g. Bellevue ED, covered for J. Smith" />
+            </div>
+            <div class="field full preview">
+              <span class="muted small">Estimated payout</span>
+              <span class="preview-amount" id="entryPreview">$0.00</span>
+            </div>
+            <div class="field full">
+              <button type="submit" class="btn btn-primary block">Add Entry</button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </div>
 
-    <div id="tab-shifts" class="tab-pane active">
-      <main class="grid">
+    <!-- Page 2: Shift Log -->
+    <div id="tab-log" class="tab-pane">
+      <div class="page-pad">
         <section class="card panel" id="entriesPanel">
           <div class="panel-header">
             <h2>Shift Log</h2>
@@ -142,82 +190,68 @@
             </table>
           </div>
         </section>
-
-        <section class="card panel" id="entryPanel">
-          <div class="panel-header">
-            <h2>Log a Shift</h2>
-          </div>
-          <form id="entryForm" class="form">
-            <div class="field">
-              <label for="entryDate">Date</label>
-              <input type="date" id="entryDate" required />
-            </div>
-            <div class="field">
-              <label for="entryCategory">Category</label>
-              <select id="entryCategory" required></select>
-            </div>
-            <div class="field" id="startTimeField" style="display:none">
-              <label for="entryStartTime">Started at</label>
-              <input type="time" id="entryStartTime" />
-            </div>
-            <div class="field" id="endTimeField">
-              <label for="entryEndTime">Left at <span class="muted small" id="startTimeHint"></span></label>
-              <input type="time" id="entryEndTime" />
-            </div>
-            <div class="field" id="hoursField">
-              <label for="entryHours">Hours <span class="muted small" id="hoursAuto"></span></label>
-              <input type="number" id="entryHours" step="0.25" min="0" placeholder="e.g. 4.5" />
-            </div>
-            <div class="field">
-              <label for="entryStatus">Status</label>
-              <select id="entryStatus">
-                <option value="pending">Pending</option>
-                <option value="submitted">Submitted</option>
-                <option value="deposited">Deposited</option>
-              </select>
-            </div>
-            <div class="field full">
-              <label for="entryNote">Note (optional)</label>
-              <input type="text" id="entryNote" placeholder="e.g. Bellevue ED, covered for J. Smith" />
-            </div>
-            <div class="field full preview">
-              <span class="muted small">Estimated payout</span>
-              <span class="preview-amount" id="entryPreview">$0.00</span>
-            </div>
-            <div class="field full">
-              <button type="submit" class="btn btn-primary block">Add Entry</button>
-            </div>
-          </form>
-        </section>
-      </main>
+      </div>
     </div>
 
+    <!-- Page 3: Categories -->
     <div id="tab-categories" class="tab-pane">
-      <section class="card panel" id="categoriesPanel">
-        <div class="panel-header">
-          <h2>Categories</h2>
-          <button id="addCategoryBtn" class="btn btn-primary">+ Add Category</button>
-        </div>
-        <p class="muted small">
-          Each category can be <strong>Hourly</strong> (rate &times; hours) or <strong>Flat</strong> (per shift).
-          Click the toggle on a row to switch.
-        </p>
-        <div class="table-wrap">
-          <table class="table" id="categoriesTable">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Type</th>
-                <th class="num">Rate / Flat</th>
-                <th class="num">Start Time</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="categoriesBody"></tbody>
-          </table>
-        </div>
-      </section>
+      <div class="page-pad">
+        <section class="card panel" id="categoriesPanel">
+          <div class="panel-header">
+            <h2>Categories</h2>
+            <button id="addCategoryBtn" class="btn btn-primary">+ Add Category</button>
+          </div>
+          <p class="muted small">
+            Each category can be <strong>Hourly</strong> (rate &times; hours) or <strong>Flat</strong> (per shift).
+            Click the toggle on a row to switch.
+          </p>
+          <div class="table-wrap">
+            <table class="table" id="categoriesTable">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th class="num">Rate / Flat</th>
+                  <th class="num">Start Time</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="categoriesBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
     </div>
+
+    <!-- Floating bottom nav -->
+    <nav class="bottom-nav" id="bottomNav" role="tablist">
+      <button class="nav-item active" type="button" role="tab" data-tab="home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="9"/>
+          <line x1="12" y1="8" x2="12" y2="16"/>
+          <line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+        <span>Log</span>
+      </button>
+      <button class="nav-item" type="button" role="tab" data-tab="log">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="8" y1="6" x2="21" y2="6"/>
+          <line x1="8" y1="12" x2="21" y2="12"/>
+          <line x1="8" y1="18" x2="21" y2="18"/>
+          <circle cx="3.5" cy="6" r="0.5" fill="currentColor"/>
+          <circle cx="3.5" cy="12" r="0.5" fill="currentColor"/>
+          <circle cx="3.5" cy="18" r="0.5" fill="currentColor"/>
+        </svg>
+        <span>Shifts</span>
+      </button>
+      <button class="nav-item" type="button" role="tab" data-tab="categories">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+          <circle cx="7" cy="7" r="1" fill="currentColor" stroke="none"/>
+        </svg>
+        <span>Categories</span>
+      </button>
+    </nav>
 
     <!-- Category modal -->
     <dialog id="categoryDialog" class="dialog">
@@ -250,10 +284,6 @@
         </div>
       </form>
     </dialog>
-
-    <footer class="foot muted small">
-      Synced to the cloud. Use Export to keep an offline backup.
-    </footer>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>

@@ -731,11 +731,11 @@
   }
 
   function wireTabs() {
-    document.querySelectorAll(".tab").forEach((tab) => {
-      tab.addEventListener("click", () => {
-        const target = tab.dataset.tab;
-        document.querySelectorAll(".tab").forEach((t) =>
-          t.classList.toggle("active", t === tab)
+    document.querySelectorAll(".nav-item").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const target = btn.dataset.tab;
+        document.querySelectorAll(".nav-item").forEach((b) =>
+          b.classList.toggle("active", b === btn)
         );
         document.querySelectorAll(".tab-pane").forEach((p) =>
           p.classList.toggle("active", p.id === `tab-${target}`)
