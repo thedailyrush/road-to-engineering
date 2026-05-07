@@ -40,6 +40,122 @@
   const uid = () =>
     Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
+  // Historical entries from Google Sheet.
+  // Columns: [categoryName, date(YYYY-MM-DD), endTime(HH:MM 24h), flexStartTime(HH:MM), hours, status]
+  // flexStartTime is only non-empty for Pre-time (flexible category).
+  // endTime is "" for flat-pay categories.
+  const SHEET_ENTRIES = [
+    ["Overtime","2025-08-05","17:30","",1.7,"deposited"],
+    ["Overtime","2025-08-07","16:59","",1.2,"deposited"],
+    ["Overtime","2025-08-18","18:00","",2.2,"deposited"],
+    ["Overtime","2025-08-22","16:22","",0.5,"deposited"],
+    ["Overtime","2025-08-25","19:05","",3.3,"deposited"],
+    ["Overtime (Late)","2025-08-28","21:45","",0.8,"deposited"],
+    ["Pre-time","2025-08-28","12:00","06:50",5.2,"deposited"],
+    ["Overtime","2025-09-04","19:14","",3.4,"deposited"],
+    ["Bellevue Extra Att.","2025-09-07","10:30","",3.0,"deposited"],
+    ["Overtime","2025-09-08","18:40","",2.8,"deposited"],
+    ["Overtime","2025-09-12","17:04","",1.2,"deposited"],
+    ["Weekend Flat Pay","2025-09-14","","",0,"deposited"],
+    ["Overtime (Late)","2025-09-16","22:12","",1.2,"deposited"],
+    ["Pre-time","2025-09-19","12:00","06:50",5.2,"deposited"],
+    ["Overtime","2025-09-22","16:31","",0.7,"deposited"],
+    ["Overtime (Late)","2025-09-23","21:45","",0.8,"deposited"],
+    ["Overtime","2025-09-25","17:20","",1.5,"deposited"],
+    ["Overtime","2025-09-29","16:45","",0.9,"deposited"],
+    ["Overtime","2025-10-01","16:10","",0.3,"deposited"],
+    ["Overtime","2025-10-02","17:12","",1.4,"deposited"],
+    ["Overtime","2025-10-06","19:08","",3.3,"deposited"],
+    ["Overtime (Late)","2025-10-07","21:57","",1.0,"deposited"],
+    ["Weekend Flat Pay","2025-10-11","","",0,"deposited"],
+    ["Weekend Back Up 1","2025-10-11","16:34","",8.6,"deposited"],
+    ["Overtime","2025-10-14","17:03","",1.2,"deposited"],
+    ["Overtime","2025-10-16","18:08","",2.3,"deposited"],
+    ["Overtime","2025-10-17","16:23","",0.6,"deposited"],
+    ["Overtime","2025-10-27","21:33","",5.7,"deposited"],
+    ["Overtime","2025-10-30","17:47","",2.0,"deposited"],
+    ["Overtime","2025-10-31","18:00","",2.2,"deposited"],
+    ["Bellevue Extra Att.","2025-11-02","13:54","",6.4,"deposited"],
+    ["Overtime","2025-11-06","16:56","",1.1,"deposited"],
+    ["Weekend Back Up 1","2025-11-08","19:02","",11.0,"deposited"],
+    ["Overtime","2025-11-11","18:50","",3.0,"deposited"],
+    ["Overtime","2025-11-12","18:25","",2.6,"deposited"],
+    ["Overtime","2025-11-13","16:34","",0.7,"deposited"],
+    ["Overtime","2025-11-14","16:43","",0.9,"deposited"],
+    ["Weekend Back Up 1","2025-11-16","18:25","",10.4,"deposited"],
+    ["Overtime","2025-11-17","18:11","",2.4,"deposited"],
+    ["Overtime","2025-11-18","16:20","",0.5,"deposited"],
+    ["Overtime","2025-11-19","17:05","",1.3,"deposited"],
+    ["Overtime","2025-11-21","17:32","",1.7,"deposited"],
+    ["Overtime","2025-11-24","18:35","",2.8,"deposited"],
+    ["Overtime","2025-11-25","18:10","",2.3,"deposited"],
+    ["Overtime","2025-12-08","21:20","",5.5,"deposited"],
+    ["Weekend Flat Pay","2025-12-13","","",0,"deposited"],
+    ["Weekend Flat Pay","2025-12-14","","",0,"deposited"],
+    ["Holiday","2025-12-25","","",0,"deposited"],
+    ["Overtime","2025-12-09","20:13","",4.4,"deposited"],
+    ["Overtime","2025-12-12","16:15","",0.4,"deposited"],
+    ["Weekend Back Up 1","2025-12-14","15:33","",7.6,"deposited"],
+    ["Overtime","2025-12-16","20:33","",4.7,"deposited"],
+    ["Overtime (Late)","2025-12-19","23:10","",2.2,"deposited"],
+    ["Overtime","2025-12-22","16:14","",0.4,"deposited"],
+    ["Pre-time","2025-12-26","09:03","06:50",2.2,"deposited"],
+    ["Bellevue Extra Att.","2025-12-28","14:05","",6.6,"deposited"],
+    ["Overtime","2025-12-29","16:39","",0.8,"deposited"],
+    ["Bellevue Long Call","2026-01-02","","",0,"deposited"],
+    ["Overtime","2026-01-05","17:48","",2.0,"deposited"],
+    ["Overtime","2026-01-07","16:21","",0.5,"deposited"],
+    ["Overtime","2026-01-08","17:45","",1.9,"deposited"],
+    ["Overtime","2026-01-09","16:50","",1.0,"deposited"],
+    ["Tisch M-Th Overnight","2026-01-26","","",0,"deposited"],
+    ["Overtime","2026-01-13","19:55","",4.1,"deposited"],
+    ["Overtime","2026-01-14","20:58","",5.1,"deposited"],
+    ["Pre-time","2026-01-26","13:00","07:20",5.7,"deposited"],
+    ["Overtime","2026-01-15","16:37","",0.8,"deposited"],
+    ["Weekend Back Up 1","2026-01-24","16:53","",8.9,"deposited"],
+    ["Bellevue Extra Att.","2026-01-31","13:12","",5.7,"deposited"],
+    ["Overtime","2026-01-28","15:59","",0.2,"deposited"],
+    ["Overtime","2026-01-29","19:14","",3.4,"deposited"],
+    ["Overtime","2026-02-03","19:51","",4.0,"deposited"],
+    ["Overtime","2026-02-04","18:19","",2.5,"deposited"],
+    ["Pre-time","2026-02-06","13:00","06:50",6.2,"deposited"],
+    ["Tisch Friday Overnight","2026-02-06","","",0,"deposited"],
+    ["Overtime","2026-02-09","16:57","",1.1,"deposited"],
+    ["Overtime","2026-02-10","18:58","",3.1,"deposited"],
+    ["Overtime","2026-02-11","17:06","",1.3,"deposited"],
+    ["Overtime (Late)","2026-02-12","00:10","",3.2,"deposited"],
+    ["Overtime (Late)","2026-03-02","22:00","",1.0,"submitted"],
+    ["Overtime","2026-03-05","16:43","",0.9,"submitted"],
+    ["Overtime","2026-03-06","18:21","",2.5,"submitted"],
+    ["Weekend Back Up 1","2026-03-07","17:47","",9.8,"submitted"],
+    ["Bellevue Long Call","2026-03-09","","",0,"submitted"],
+    ["Overtime","2026-03-10","17:03","",1.2,"submitted"],
+    ["Overtime","2026-03-12","16:13","",0.4,"submitted"],
+    ["Overtime","2026-03-13","15:56","",0.1,"submitted"],
+    ["Overtime","2026-03-17","16:07","",0.3,"submitted"],
+    ["Pre-time","2026-03-19","12:00","06:50",5.2,"submitted"],
+    ["Overtime","2026-03-20","16:24","",0.6,"submitted"],
+    ["Overtime","2026-03-23","16:43","",0.9,"submitted"],
+    ["Overtime","2026-03-25","16:10","",0.3,"submitted"],
+    ["Overtime","2026-03-30","16:18","",0.5,"submitted"],
+    ["Overtime","2026-03-31","16:50","",1.0,"submitted"],
+    ["Overtime","2026-04-06","17:10","",1.3,"submitted"],
+    ["Overtime","2026-04-07","15:51","",0.0,"submitted"],
+    ["Pre-time","2026-04-08","12:00","06:50",5.2,"submitted"],
+    ["Overtime (Late)","2026-04-08","21:10","",0.2,"submitted"],
+    ["Pre-time","2026-04-14","12:00","06:50",5.2,"submitted"],
+    ["Overtime (Late)","2026-04-14","21:35","",0.6,"submitted"],
+    ["Overtime","2026-04-23","17:17","",1.5,"submitted"],
+    ["Overtime","2026-04-24","19:30","",3.7,"submitted"],
+    ["Bellevue Extra Att.","2026-04-25","14:57","",7.5,"submitted"],
+    ["Bellevue Long Call","2026-04-27","","",0,"submitted"],
+    ["Overtime","2026-05-01","19:50","",4.0,"submitted"],
+    ["Overtime","2026-05-04","19:50","",4.0,"submitted"],
+    ["Overtime","2026-05-06","18:25","",2.6,"submitted"],
+    ["Bellevue Friday Overnight","2026-05-29","","",0,"submitted"],
+    ["Bellevue Weekend Backup Flat Pay","2026-05-30","","",0,"submitted"],
+  ];
+
   const state = {
     categories: [],
     entries: [],
@@ -196,6 +312,50 @@
     } else {
       state.entries = [];
     }
+  }
+
+  async function dbSeedHistoricalData() {
+    const userId = state.user.id;
+    const nameToId = Object.fromEntries(state.categories.map((c) => [c.name, c.id]));
+
+    // Create any categories that don't exist yet
+    const missingNames = [...new Set(SHEET_ENTRIES.map((r) => r[0]))].filter(
+      (n) => !nameToId[n]
+    );
+    if (missingNames.length > 0) {
+      const fallbackRates = { "Bellevue Weekend Backup Flat Pay": 500 };
+      const newCats = missingNames.map((name) => ({
+        id: uid(),
+        user_id: userId,
+        name,
+        type: "flat",
+        rate: fallbackRates[name] ?? 0,
+        start_time: "",
+        flexible_times: false,
+      }));
+      const { data: saved, error } = await sb.from("categories").insert(newCats).select();
+      if (error) throw error;
+      for (const r of saved) {
+        state.categories.push(rowToCat(r));
+        nameToId[r.name] = r.id;
+      }
+    }
+
+    const entryRows = SHEET_ENTRIES.map(([catName, date, endTime, startTime, hours, status]) => ({
+      id: uid(),
+      user_id: userId,
+      date,
+      category_id: nameToId[catName] || null,
+      hours: Number(hours) || 0,
+      start_time: startTime || "",
+      end_time: endTime || "",
+      status,
+      note: "",
+    }));
+
+    const { data: saved, error } = await sb.from("entries").insert(entryRows).select();
+    if (error) throw error;
+    state.entries = [...state.entries, ...(saved || []).map(rowToEntry)];
   }
 
   // ---- Auth ----------------------------------------------------------------
@@ -410,9 +570,30 @@
     }
 
     if (rows.length === 0) {
-      body.innerHTML = `<tr><td colspan="7" class="empty">No entries match. Log a shift on the right to get started.</td></tr>`;
+      const isEmpty = state.entries.length === 0;
+      body.innerHTML = `<tr><td colspan="7" class="empty">
+        ${isEmpty
+          ? `No entries yet.<br><br>
+             <button class="btn btn-primary" id="loadSheetBtn">Load historical data from Google Sheet</button>`
+          : "No entries match the current filters."}
+      </td></tr>`;
       $("footHours").textContent = fmtHours(0);
       $("footTotal").textContent = fmtMoney(0);
+      if (isEmpty) {
+        $("loadSheetBtn").addEventListener("click", async () => {
+          const btn = $("loadSheetBtn");
+          btn.disabled = true;
+          btn.textContent = "Importing…";
+          try {
+            await dbSeedHistoricalData();
+            renderAll();
+          } catch (err) {
+            alert("Import failed: " + err.message);
+            btn.disabled = false;
+            btn.textContent = "Load historical data from Google Sheet";
+          }
+        });
+      }
       return;
     }
 
