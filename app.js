@@ -1,7 +1,22 @@
 (() => {
   "use strict";
 
-  const STORAGE_KEY = "overtime-tracker-v1";
+  // ---- Supabase config -----------------------------------------------------
+  const SUPABASE_URL = "https://yysflmougvftwnqrqybf.supabase.co";
+  const SUPABASE_ANON_KEY =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5c2ZsbW91Z3ZmdHducXJxeWJmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxMTE3MTgsImV4cCI6MjA5MzY4NzcxOH0.1rRegqBITOkS_LgSkJlOKOczrV56ot7ohV4f5mCMF8s";
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ---- Constants -----------------------------------------------------------
+  const FLEXIBLE_CATEGORIES = new Set(["Weekend Back Up 2", "Pre-time"]);
+  const CORRECT_START_TIMES = {
+    "Overtime": "15:50",
+    "Overtime (Late)": "21:00",
+    "Pre-time": "06:50",
+    "Bellevue Extra Att.": "07:30",
+    "Weekend Back Up 1": "08:00",
+    "Weekend Back Up 2": "08:00",
+  };
 
   const DEFAULT_CATEGORIES = [
     { name: "Overtime",                  type: "hourly", rate: 350,  startTime: "15:50" },
@@ -22,75 +37,247 @@
     { name: "Holiday Saturday",          type: "flat",   rate: 5200, startTime: "" },
   ];
 
-  const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-
-  /** @typedef {{id:string,name:string,type:'hourly'|'flat',rate:number,defaultHours:number}} Category */
-  /** @typedef {{id:string,date:string,categoryId:string,hours:number,status:'pending'|'submitted'|'deposited',note:string}} Entry */
+  const uid = () =>
+    Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
 
   const state = {
-    /** @type {Category[]} */ categories: [],
-    /** @type {Entry[]}    */ entries: [],
+    categories: [],
+    entries: [],
     filter: { search: "", category: "", status: "" },
     editingCategoryId: null,
+    user: null,
   };
 
-  // ----- persistence ---------------------------------------------------------
-  function load() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return seedDefaults();
-      const parsed = JSON.parse(raw);
-      state.categories = parsed.categories || [];
-      state.entries = parsed.entries || [];
-      if (state.categories.length === 0) seedDefaults();
-      migrate();
-    } catch (e) {
-      console.warn("Failed to load state, seeding defaults", e);
-      seedDefaults();
-    }
+  const $ = (id) => document.getElementById(id);
+
+  // ---- DB row mapping ------------------------------------------------------
+  function catToRow(cat, userId) {
+    return {
+      id: cat.id,
+      user_id: userId,
+      name: cat.name,
+      type: cat.type,
+      rate: Number(cat.rate) || 0,
+      start_time: cat.startTime || "",
+      flexible_times: !!cat.flexibleTimes,
+    };
+  }
+  function rowToCat(r) {
+    return {
+      id: r.id,
+      name: r.name,
+      type: r.type,
+      rate: Number(r.rate) || 0,
+      startTime: r.start_time || "",
+      flexibleTimes: !!r.flexible_times,
+    };
+  }
+  function entryToRow(e, userId) {
+    return {
+      id: e.id,
+      user_id: userId,
+      date: e.date,
+      category_id: e.categoryId || null,
+      hours: Number(e.hours) || 0,
+      start_time: e.startTime || "",
+      end_time: e.endTime || "",
+      status: e.status || "pending",
+      note: e.note || "",
+    };
+  }
+  function rowToEntry(r) {
+    return {
+      id: r.id,
+      date: r.date,
+      categoryId: r.category_id,
+      hours: Number(r.hours) || 0,
+      startTime: r.start_time || "",
+      endTime: r.end_time || "",
+      status: r.status,
+      note: r.note || "",
+    };
   }
 
-  const FLEXIBLE_CATEGORIES = new Set(["Weekend Back Up 2", "Pre-time"]);
-  const CORRECT_START_TIMES = {
-    "Overtime": "15:50",
-    "Overtime (Late)": "21:00",
-    "Pre-time": "06:50",
-    "Bellevue Extra Att.": "07:30",
-    "Weekend Back Up 1": "08:00",
-    "Weekend Back Up 2": "08:00",
-  };
+  // ---- DB ops --------------------------------------------------------------
+  async function dbLoadAll() {
+    const [{ data: cats, error: e1 }, { data: entries, error: e2 }] =
+      await Promise.all([
+        sb.from("categories").select("*").order("created_at", { ascending: true }),
+        sb.from("entries").select("*"),
+      ]);
+    if (e1) throw e1;
+    if (e2) throw e2;
+    state.categories = (cats || []).map(rowToCat);
+    state.entries = (entries || []).map(rowToEntry);
+    if (state.categories.length === 0) await dbSeedDefaults();
+    applyMigrations();
+  }
 
-  function migrate() {
+  function applyMigrations() {
+    const dirty = [];
     for (const c of state.categories) {
-      if (c.startTime === undefined) c.startTime = c.type === "hourly" ? "17:00" : "";
-      if (c.flexibleTimes === undefined) c.flexibleTimes = FLEXIBLE_CATEGORIES.has(c.name);
-      if (c.name in CORRECT_START_TIMES) c.startTime = CORRECT_START_TIMES[c.name];
+      let changed = false;
+      if (FLEXIBLE_CATEGORIES.has(c.name) && !c.flexibleTimes) {
+        c.flexibleTimes = true;
+        changed = true;
+      }
+      if (c.name in CORRECT_START_TIMES && c.startTime !== CORRECT_START_TIMES[c.name]) {
+        c.startTime = CORRECT_START_TIMES[c.name];
+        changed = true;
+      }
+      if (changed) dirty.push(c);
+    }
+    for (const c of dirty) dbUpsertCategory(c);
+  }
+
+  async function dbSeedDefaults() {
+    const userId = state.user.id;
+    const rows = DEFAULT_CATEGORIES.map((c) =>
+      catToRow({ id: uid(), flexibleTimes: false, ...c }, userId)
+    );
+    const { data, error } = await sb.from("categories").insert(rows).select();
+    if (error) throw error;
+    state.categories = (data || []).map(rowToCat);
+    state.entries = [];
+  }
+
+  async function dbUpsertCategory(cat) {
+    const { error } = await sb
+      .from("categories")
+      .upsert(catToRow(cat, state.user.id));
+    if (error) console.error("upsert category:", error);
+  }
+
+  async function dbDeleteCategory(id) {
+    const { error } = await sb.from("categories").delete().eq("id", id);
+    if (error) console.error("delete category:", error);
+  }
+
+  async function dbUpsertEntry(entry) {
+    const { error } = await sb
+      .from("entries")
+      .upsert(entryToRow(entry, state.user.id));
+    if (error) console.error("upsert entry:", error);
+  }
+
+  async function dbDeleteEntry(id) {
+    const { error } = await sb.from("entries").delete().eq("id", id);
+    if (error) console.error("delete entry:", error);
+  }
+
+  async function dbReset() {
+    const userId = state.user.id;
+    await sb.from("entries").delete().eq("user_id", userId);
+    await sb.from("categories").delete().eq("user_id", userId);
+    await dbSeedDefaults();
+  }
+
+  async function dbImport(data) {
+    const userId = state.user.id;
+    await sb.from("entries").delete().eq("user_id", userId);
+    await sb.from("categories").delete().eq("user_id", userId);
+    const catRows = data.categories.map((c) =>
+      catToRow({ flexibleTimes: false, ...c }, userId)
+    );
+    const { data: savedCats, error: e1 } = await sb
+      .from("categories")
+      .insert(catRows)
+      .select();
+    if (e1) throw e1;
+    state.categories = (savedCats || []).map(rowToCat);
+    if (data.entries.length > 0) {
+      const entryRows = data.entries.map((e) => entryToRow(e, userId));
+      const { data: savedEntries, error: e2 } = await sb
+        .from("entries")
+        .insert(entryRows)
+        .select();
+      if (e2) throw e2;
+      state.entries = (savedEntries || []).map(rowToEntry);
+    } else {
+      state.entries = [];
     }
   }
 
-  function calcHoursFromTimes(start, end) {
-    if (!start || !end) return 0;
-    const [sh, sm] = start.split(":").map(Number);
-    const [eh, em] = end.split(":").map(Number);
-    let mins = (eh * 60 + em) - (sh * 60 + sm);
-    if (mins < 0) mins += 24 * 60;
-    return mins / 60;
+  // ---- Auth ----------------------------------------------------------------
+  let isSignUp = false;
+
+  function showAuth() {
+    $("authOverlay").style.display = "flex";
+    $("appShell").style.display = "none";
+  }
+  function showApp() {
+    $("authOverlay").style.display = "none";
+    $("appShell").style.display = "";
+    if (state.user) $("userChip").textContent = state.user.email;
+  }
+  function setAuthError(msg) {
+    const el = $("authError");
+    if (msg) {
+      el.style.display = "";
+      el.querySelector(".error-text").textContent = msg;
+    } else {
+      el.style.display = "none";
+    }
   }
 
-  function seedDefaults() {
-    state.categories = DEFAULT_CATEGORIES.map((c) => ({ id: uid(), ...c }));
-    state.entries = [];
-    save();
+  function wireAuth() {
+    $("authToggleBtn").addEventListener("click", () => {
+      isSignUp = !isSignUp;
+      $("authSubmitBtn").textContent = isSignUp ? "Create Account" : "Sign In";
+      $("authToggleBtn").textContent = isSignUp
+        ? "Already have an account? Sign in"
+        : "Don't have an account? Sign up";
+      $("authSubtitle").textContent = isSignUp
+        ? "Create an account to start tracking"
+        : "Sign in to access your data";
+      setAuthError(null);
+    });
+
+    $("authForm").addEventListener("submit", async (ev) => {
+      ev.preventDefault();
+      const email = $("authEmail").value.trim();
+      const password = $("authPassword").value;
+      const btn = $("authSubmitBtn");
+      btn.disabled = true;
+      const oldText = btn.textContent;
+      btn.textContent = isSignUp ? "Creating…" : "Signing in…";
+      setAuthError(null);
+
+      try {
+        const result = isSignUp
+          ? await sb.auth.signUp({ email, password })
+          : await sb.auth.signInWithPassword({ email, password });
+        if (result.error) throw result.error;
+        const session = result.data.session;
+        const user = result.data.user || session?.user;
+        if (isSignUp && !session) {
+          setAuthError(
+            "Account created. Check your email to confirm, then sign in."
+          );
+          return;
+        }
+        state.user = user;
+        await dbLoadAll();
+        showApp();
+        renderAll();
+      } catch (err) {
+        setAuthError(err.message || "Authentication failed");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = oldText;
+      }
+    });
+
+    $("signOutBtn").addEventListener("click", async () => {
+      await sb.auth.signOut();
+      state.user = null;
+      state.categories = [];
+      state.entries = [];
+      showAuth();
+    });
   }
 
-  function save() {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ categories: state.categories, entries: state.entries })
-    );
-  }
-
-  // ----- helpers -------------------------------------------------------------
+  // ---- Helpers -------------------------------------------------------------
   const fmtMoney = (n) =>
     (n || 0).toLocaleString(undefined, { style: "currency", currency: "USD" });
   const fmtHours = (n) => (Number(n) || 0).toFixed(1);
@@ -106,9 +293,46 @@
     return (Number(cat.rate) || 0) * (Number(entry.hours) || 0);
   }
 
-  // ----- rendering -----------------------------------------------------------
-  const $ = (id) => document.getElementById(id);
+  function calcHoursFromTimes(start, end) {
+    if (!start || !end) return 0;
+    const [sh, sm] = start.split(":").map(Number);
+    const [eh, em] = end.split(":").map(Number);
+    let mins = eh * 60 + em - (sh * 60 + sm);
+    if (mins < 0) mins += 24 * 60;
+    return mins / 60;
+  }
 
+  function escapeHtml(s) {
+    return String(s ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+  }
+  const escapeAttr = escapeHtml;
+
+  function formatDate(iso) {
+    if (!iso) return "";
+    const [y, m, d] = iso.split("-").map(Number);
+    if (!y) return iso;
+    const dt = new Date(y, m - 1, d);
+    return dt.toLocaleDateString(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  }
+
+  function formatTime(t) {
+    if (!t) return "";
+    const [h, m] = t.split(":").map(Number);
+    const period = h >= 12 ? "PM" : "AM";
+    const h12 = h % 12 || 12;
+    return `${h12}:${String(m).padStart(2, "0")} ${period}`;
+  }
+
+  // ---- Rendering -----------------------------------------------------------
   function renderCategories() {
     const body = $("categoriesBody");
     body.innerHTML = "";
@@ -156,7 +380,6 @@
       opt.value = c.id;
       opt.textContent = `${c.name} ${c.type === "flat" ? `(flat ${fmtMoney(c.rate)})` : `(${fmtMoney(c.rate)}/hr)`}`;
       sel.appendChild(opt);
-
       const o2 = document.createElement("option");
       o2.value = c.id;
       o2.textContent = c.name;
@@ -204,12 +427,14 @@
 
       const tr = document.createElement("tr");
       tr.dataset.id = e.id;
-      const effectiveStart = cat && cat.flexibleTimes ? e.startTime : (cat && cat.startTime);
-      const hoursLabel = cat && cat.type === "hourly"
-        ? (effectiveStart && e.endTime
+      const effectiveStart =
+        cat && cat.flexibleTimes ? e.startTime : (cat && cat.startTime);
+      const hoursLabel =
+        cat && cat.type === "hourly"
+          ? effectiveStart && e.endTime
             ? `${fmtHours(hours)} <span class="muted small">(${formatTime(effectiveStart)}–${formatTime(e.endTime)})</span>`
-            : fmtHours(hours))
-        : "—";
+            : fmtHours(hours)
+          : "—";
       tr.innerHTML = `
         <td>${formatDate(e.date)}</td>
         <td>
@@ -258,38 +483,7 @@
     renderSummary();
   }
 
-  // ----- formatting helpers --------------------------------------------------
-  function escapeHtml(s) {
-    return String(s ?? "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;");
-  }
-  const escapeAttr = escapeHtml;
-
-  function formatDate(iso) {
-    if (!iso) return "";
-    const [y, m, d] = iso.split("-").map(Number);
-    if (!y) return iso;
-    const dt = new Date(y, m - 1, d);
-    return dt.toLocaleDateString(undefined, {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  }
-
-  function formatTime(t) {
-    if (!t) return "";
-    const [h, m] = t.split(":").map(Number);
-    const period = h >= 12 ? "PM" : "AM";
-    const h12 = h % 12 || 12;
-    return `${h12}:${String(m).padStart(2, "0")} ${period}`;
-  }
-
-  // ----- entry form ---------------------------------------------------------
+  // ---- Entry form helpers --------------------------------------------------
   function syncHoursField() {
     const sel = $("entryCategory");
     const cat = categoryById(sel.value);
@@ -363,22 +557,21 @@
     $("entryPreview").textContent = fmtMoney(earned);
   }
 
-  // ----- event wiring -------------------------------------------------------
+  // ---- Wire ----------------------------------------------------------------
   function wire() {
-    // entry form
     $("entryDate").value = new Date().toISOString().slice(0, 10);
     $("entryCategory").addEventListener("change", () => {
       syncHoursField();
       updatePreview();
     });
+    $("entryStartTime").addEventListener("input", recalcHoursFromEndTime);
+    $("entryEndTime").addEventListener("input", recalcHoursFromEndTime);
     $("entryHours").addEventListener("input", () => {
       $("hoursAuto").textContent = "(manual)";
       updatePreview();
     });
-    $("entryStartTime").addEventListener("input", recalcHoursFromEndTime);
-    $("entryEndTime").addEventListener("input", recalcHoursFromEndTime);
 
-    $("entryForm").addEventListener("submit", (ev) => {
+    $("entryForm").addEventListener("submit", async (ev) => {
       ev.preventDefault();
       const cat = categoryById($("entryCategory").value);
       if (!cat) return;
@@ -400,32 +593,31 @@
         note: $("entryNote").value.trim(),
       };
       state.entries.push(entry);
-      save();
+      renderEntries();
+      renderSummary();
       $("entryNote").value = "";
       $("entryStartTime").value = "";
       $("entryEndTime").value = "";
       $("entryHours").value = "";
-      renderEntries();
-      renderSummary();
       updatePreview();
+      await dbUpsertEntry(entry);
     });
 
-    // category table interactions (event delegation)
-    $("categoriesBody").addEventListener("click", (ev) => {
+    // Categories
+    $("categoriesBody").addEventListener("click", async (ev) => {
       const row = ev.target.closest("tr[data-id]");
       if (!row) return;
       const id = row.dataset.id;
       const cat = categoryById(id);
       if (!cat) return;
-
       const toggle = ev.target.closest(".toggle");
       if (toggle) {
         cat.type = cat.type === "hourly" ? "flat" : "hourly";
-        save();
         renderCategories();
         renderCategoryDropdowns();
         renderEntries();
         renderSummary();
+        await dbUpsertCategory(cat);
         return;
       }
       const btn = ev.target.closest("[data-action]");
@@ -436,8 +628,8 @@
           : `Delete "${cat.name}"?`;
         if (!confirm(msg)) return;
         state.categories = state.categories.filter((c) => c.id !== id);
-        save();
         renderAll();
+        await dbDeleteCategory(id);
       }
     });
 
@@ -449,26 +641,23 @@
       }
     });
 
-    $("categoriesBody").addEventListener("change", (ev) => {
+    $("categoriesBody").addEventListener("change", async (ev) => {
       const row = ev.target.closest("tr[data-id]");
       if (!row) return;
       const cat = categoryById(row.dataset.id);
       if (!cat) return;
       const field = ev.target.dataset.field;
       if (!field) return;
-      if (field === "rate") {
-        cat[field] = Number(ev.target.value) || 0;
-      } else {
-        cat[field] = ev.target.value;
-      }
-      save();
+      if (field === "rate") cat[field] = Number(ev.target.value) || 0;
+      else cat[field] = ev.target.value;
       renderCategoryDropdowns();
       renderEntries();
       renderSummary();
+      await dbUpsertCategory(cat);
     });
 
-    // entries table
-    $("entriesBody").addEventListener("click", (ev) => {
+    // Entries
+    $("entriesBody").addEventListener("click", async (ev) => {
       const row = ev.target.closest("tr[data-id]");
       if (!row) return;
       const entry = state.entries.find((e) => e.id === row.dataset.id);
@@ -476,19 +665,19 @@
       const action = ev.target.closest("[data-action]")?.dataset.action;
       if (action === "delete-entry") {
         state.entries = state.entries.filter((e) => e.id !== entry.id);
-        save();
         renderEntries();
         renderSummary();
+        await dbDeleteEntry(entry.id);
       } else if (action === "cycle-status") {
         const order = ["pending", "submitted", "deposited"];
         entry.status = order[(order.indexOf(entry.status) + 1) % order.length];
-        save();
         renderEntries();
         renderSummary();
+        await dbUpsertEntry(entry);
       }
     });
 
-    // filters
+    // Filters
     $("searchInput").addEventListener("input", (ev) => {
       state.filter.search = ev.target.value;
       renderEntries();
@@ -502,12 +691,16 @@
       renderEntries();
     });
 
-    // top-bar actions
+    // Top-bar
     $("addCategoryBtn").addEventListener("click", () => openCategoryDialog());
-    $("resetBtn").addEventListener("click", () => {
+    $("resetBtn").addEventListener("click", async () => {
       if (!confirm("Wipe all categories and entries and restore defaults?")) return;
-      seedDefaults();
-      renderAll();
+      try {
+        await dbReset();
+        renderAll();
+      } catch (err) {
+        alert("Reset failed: " + err.message);
+      }
     });
 
     $("exportBtn").addEventListener("click", () => {
@@ -522,6 +715,7 @@
       a.click();
       URL.revokeObjectURL(url);
     });
+
     $("importBtn").addEventListener("click", () => $("importFile").click());
     $("importFile").addEventListener("change", async (ev) => {
       const file = ev.target.files?.[0];
@@ -532,9 +726,11 @@
         if (!Array.isArray(data.categories) || !Array.isArray(data.entries)) {
           throw new Error("Invalid file format");
         }
-        state.categories = data.categories;
-        state.entries = data.entries;
-        save();
+        if (!confirm("Import will replace all your current categories and entries. Continue?")) {
+          ev.target.value = "";
+          return;
+        }
+        await dbImport(data);
         renderAll();
       } catch (err) {
         alert("Could not import file: " + err.message);
@@ -543,35 +739,40 @@
       }
     });
 
-    // category dialog
+    // Category dialog
     const dialog = $("categoryDialog");
     $("catCancel").addEventListener("click", () => dialog.close());
     document.querySelectorAll('input[name="catType"]').forEach((r) =>
       r.addEventListener("change", syncCatTypeUI)
     );
-    $("categoryForm").addEventListener("submit", (ev) => {
+    $("categoryForm").addEventListener("submit", async (ev) => {
       ev.preventDefault();
       const name = $("catName").value.trim();
       if (!name) return;
       const type = document.querySelector('input[name="catType"]:checked').value;
       const rate = Number($("catRate").value) || 0;
       const startTime = type === "hourly" ? $("catStartTime").value : "";
+      let cat;
       if (state.editingCategoryId) {
-        const cat = categoryById(state.editingCategoryId);
+        cat = categoryById(state.editingCategoryId);
         if (cat) Object.assign(cat, { name, type, rate, startTime });
       } else {
-        state.categories.push({ id: uid(), name, type, rate, startTime });
+        cat = { id: uid(), name, type, rate, startTime, flexibleTimes: false };
+        state.categories.push(cat);
       }
       state.editingCategoryId = null;
-      save();
       dialog.close();
       renderAll();
+      if (cat) await dbUpsertCategory(cat);
     });
   }
 
   function syncCatTypeUI() {
-    const isFlat = document.querySelector('input[name="catType"]:checked').value === "flat";
-    $("catRateLabel").textContent = isFlat ? "Flat amount per shift ($)" : "Hourly Rate ($)";
+    const isFlat =
+      document.querySelector('input[name="catType"]:checked').value === "flat";
+    $("catRateLabel").textContent = isFlat
+      ? "Flat amount per shift ($)"
+      : "Hourly Rate ($)";
     $("catStartTimeField").style.display = isFlat ? "none" : "";
   }
 
@@ -579,7 +780,9 @@
     state.editingCategoryId = cat ? cat.id : null;
     $("categoryDialogTitle").textContent = cat ? "Edit Category" : "Add Category";
     $("catName").value = cat?.name || "";
-    document.querySelector(`input[name="catType"][value="${cat?.type || "hourly"}"]`).checked = true;
+    document.querySelector(
+      `input[name="catType"][value="${cat?.type || "hourly"}"]`
+    ).checked = true;
     $("catRate").value = cat?.rate ?? "";
     $("catStartTime").value = cat?.startTime ?? "";
     syncCatTypeUI();
@@ -587,8 +790,32 @@
     $("catName").focus();
   }
 
-  // ----- init ---------------------------------------------------------------
-  load();
-  wire();
-  renderAll();
+  // ---- Init ----------------------------------------------------------------
+  async function init() {
+    wireAuth();
+    wire();
+
+    const { data } = await sb.auth.getSession();
+    const session = data?.session;
+    if (session?.user) {
+      state.user = session.user;
+      try {
+        await dbLoadAll();
+        showApp();
+        renderAll();
+      } catch (err) {
+        console.error("Failed to load data:", err);
+        setAuthError("Failed to load data: " + err.message);
+        showAuth();
+      }
+    } else {
+      showAuth();
+    }
+
+    sb.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") showAuth();
+    });
+  }
+
+  init();
 })();

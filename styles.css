@@ -252,3 +252,36 @@ body {
 .foot { padding: 18px 28px 28px; text-align: center; }
 
 .del { color: var(--danger); }
+
+.auth-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(900px 500px at 50% -10%, rgba(110, 168, 255, 0.18), transparent 60%), var(--bg);
+  padding: 20px;
+}
+.auth-card {
+  width: 100%; max-width: 420px; padding: 28px 24px;
+}
+.auth-logo {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  margin-bottom: 22px; text-align: center;
+}
+.auth-logo .logo { width: 52px; height: 52px; font-size: 1.05rem; border-radius: 14px; }
+.auth-logo h1 { margin: 0; font-size: 1.2rem; }
+.auth-logo p { margin: 0; }
+.auth-toggle-row { text-align: center; }
+.auth-toggle-row .btn { font-size: 0.85rem; }
+
+.error-text { color: var(--danger); font-size: 0.88rem; }
+#authError {
+  background: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  border-radius: 9px;
+  padding: 9px 12px;
+}
+
+.user-chip {
+  padding: 6px 10px; border: 1px solid var(--border);
+  border-radius: 999px; background: var(--panel-2);
+  max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
