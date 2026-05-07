@@ -285,3 +285,44 @@ body {
   border-radius: 999px; background: var(--panel-2);
   max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+
+/* Entries panel: align left/right with grid */
+#entriesPanel { margin: 16px 28px; }
+
+/* ---- Mobile (≤ 640px) -------------------------------------------- */
+@media (max-width: 640px) {
+  /* Topbar */
+  .topbar { padding: 12px 16px; flex-wrap: wrap; gap: 10px; }
+  .topbar h1 { font-size: 1.05rem; }
+  .brand p { display: none; }
+  .logo { width: 36px; height: 36px; font-size: 0.85rem; border-radius: 10px; }
+  .actions { gap: 6px; }
+  .btn { padding: 6px 10px; font-size: 0.82rem; }
+  .user-chip { display: none; }
+
+  /* Summary */
+  .summary { padding: 0 16px; gap: 8px; }
+  .stat { padding: 10px 12px; }
+  .stat .value { font-size: 1.15rem; }
+
+  /* Grid + panels */
+  .grid { padding: 12px 16px 0; gap: 12px; }
+  .panel { padding: 14px 12px 10px; }
+  #entriesPanel { margin: 12px 16px; }
+
+  /* Entry form: collapse to single column */
+  .form { grid-template-columns: 1fr; }
+
+  /* Filters: stack vertically */
+  .filters { flex-direction: column; }
+  .filters input, .filters select { width: 100%; }
+
+  /* Tables: tighter cells, smaller font */
+  .table { font-size: 0.85rem; }
+  .table th, .table td { padding: 8px 6px; }
+
+  /* Footer + dialog */
+  .foot { padding: 14px 16px 20px; }
+  .dialog { width: 96vw; }
+  .auth-card { padding: 20px 16px; }
+}
