@@ -84,46 +84,56 @@
           <div class="panel-header">
             <h2>Log a Shift</h2>
           </div>
-          <form id="entryForm" class="form">
-            <div class="field">
-              <label for="entryDate">Date</label>
-              <input type="date" id="entryDate" required />
+          <form id="entryForm" class="entry-form">
+            <div class="ef-grid">
+
+              <div class="ef-card">
+                <label class="ef-label" for="entryDate">Date</label>
+                <input type="date" id="entryDate" class="ef-input" required />
+              </div>
+
+              <div class="ef-card">
+                <label class="ef-label" for="entryCategory">Category</label>
+                <select id="entryCategory" class="ef-input" required></select>
+              </div>
+
+              <div class="ef-time-group" id="entryTimeGroup">
+                <div class="ef-card" id="startTimeField" style="display:none">
+                  <label class="ef-label" for="entryStartTime">Start <span class="ef-hint" id="startTimeHint"></span></label>
+                  <input type="time" id="entryStartTime" class="ef-input" />
+                </div>
+                <div class="ef-card" id="endTimeField">
+                  <label class="ef-label" for="entryEndTime">Left at</label>
+                  <input type="time" id="entryEndTime" class="ef-input" />
+                </div>
+                <div class="ef-card" id="hoursField">
+                  <label class="ef-label" for="entryHours">Hours <span class="ef-hint" id="hoursAuto"></span></label>
+                  <input type="number" id="entryHours" class="ef-input" step="0.25" min="0" placeholder="4.5" />
+                </div>
+              </div>
+
+              <div class="ef-card">
+                <label class="ef-label" for="entryStatus">Status</label>
+                <select id="entryStatus" class="ef-input">
+                  <option value="pending">Pending</option>
+                  <option value="submitted">Submitted</option>
+                  <option value="deposited">Deposited</option>
+                </select>
+              </div>
+
+              <div class="ef-card">
+                <label class="ef-label" for="entryNote">Note</label>
+                <input type="text" id="entryNote" class="ef-input" placeholder="Optional" />
+              </div>
+
             </div>
-            <div class="field">
-              <label for="entryCategory">Category</label>
-              <select id="entryCategory" required></select>
-            </div>
-            <div class="field" id="startTimeField" style="display:none">
-              <label for="entryStartTime">Started at</label>
-              <input type="time" id="entryStartTime" />
-            </div>
-            <div class="field" id="endTimeField">
-              <label for="entryEndTime">Left at <span class="muted small" id="startTimeHint"></span></label>
-              <input type="time" id="entryEndTime" />
-            </div>
-            <div class="field" id="hoursField">
-              <label for="entryHours">Hours <span class="muted small" id="hoursAuto"></span></label>
-              <input type="number" id="entryHours" step="0.25" min="0" placeholder="e.g. 4.5" />
-            </div>
-            <div class="field">
-              <label for="entryStatus">Status</label>
-              <select id="entryStatus">
-                <option value="pending">Pending</option>
-                <option value="submitted">Submitted</option>
-                <option value="deposited">Deposited</option>
-              </select>
-            </div>
-            <div class="field full">
-              <label for="entryNote">Note (optional)</label>
-              <input type="text" id="entryNote" placeholder="e.g. Bellevue ED, covered for J. Smith" />
-            </div>
-            <div class="field full preview">
+
+            <div class="ef-payout">
               <span class="muted small">Estimated payout</span>
-              <span class="preview-amount" id="entryPreview">$0.00</span>
+              <strong class="ef-amount" id="entryPreview">$0.00</strong>
             </div>
-            <div class="field full">
-              <button type="submit" class="btn btn-primary block">Add Entry</button>
-            </div>
+
+            <button type="submit" class="btn btn-primary ef-submit">Add Entry</button>
           </form>
         </section>
       </div>

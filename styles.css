@@ -186,73 +186,109 @@ body {
 }
 .preview-amount { font-weight: 700; font-size: 1.1rem; }
 
-/* ---- Entry form: auto-responsive card fields ---- */
-/* columns auto-reflow: 2-up on phones, 3-up on tablet, more on desktop */
-#entryForm {
-  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+/* ---- Entry form: card-field design ---- */
+.entry-form {
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
-/* each field with an input/select becomes a self-contained card */
-#entryForm .field:has(input),
-#entryForm .field:has(select) {
+/* 2-column grid; grid-column:1/-1 items go full width */
+.ef-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.ef-span { grid-column: 1 / -1; }
+
+/* each field is a rounded card */
+.ef-card {
   background: var(--panel-2);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 11px 14px 13px;
-  gap: 4px;
-  transition: border-color .15s;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  transition: border-color .15s, background .15s;
 }
-#entryForm .field:has(input):focus-within,
-#entryForm .field:has(select):focus-within {
+.ef-card:focus-within {
   border-color: var(--primary);
+  background: rgba(110,168,255,.04);
 }
 
-/* label inside the card: compact uppercase */
-#entryForm .field:has(input) label,
-#entryForm .field:has(select) label {
-  font-size: 0.68rem;
+/* label: small uppercase inside card */
+.ef-label {
+  font-size: 0.67rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: .06em;
+  letter-spacing: .07em;
   color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.ef-hint {
+  font-size: 0.75rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  white-space: normal;
 }
 
-/* input/select inside the card: borderless, transparent */
-#entryForm input,
-#entryForm select {
+/* input/select inside card: borderless, transparent */
+.ef-input {
   background: transparent;
   border: none;
-  padding: 3px 0 0;
-  font-size: 0.97rem;
-  border-radius: 0;
   color: var(--text);
+  font-size: 0.97rem;
   outline: none;
   width: 100%;
+  padding: 0;
+  min-width: 0;
+  font-family: inherit;
 }
-#entryForm input:focus,
-#entryForm select:focus {
-  background: transparent;
-  border-color: transparent;
-}
+.ef-input::placeholder { color: var(--muted); opacity: .5; }
+.ef-input:focus { background: transparent; }
 
-/* preview card: horizontal label + amount */
-#entryForm .field.preview {
-  flex-direction: row;
+/* time group: flex row of cards (start/end/hours) spanning full grid width */
+.ef-time-group {
+  display: flex;
+  gap: 10px;
+  grid-column: 1 / -1;
+}
+.ef-time-group .ef-card { flex: 1; }
+
+/* payout banner */
+.ef-payout {
+  display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  border-style: dashed;
+  background: linear-gradient(135deg, rgba(110,168,255,.09), rgba(160,107,255,.06));
+  border: 1px solid rgba(110,168,255,.22);
+  border-radius: 12px;
+  padding: 13px 16px;
   gap: 8px;
 }
-#entryForm .field.preview .muted { font-size: 0.83rem; }
+.ef-payout .muted { font-size: 0.85rem; }
+.ef-amount {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary);
+  white-space: nowrap;
+}
 
-/* submit button field: no card wrapper */
-#entryForm .field:has(button) {
-  background: transparent;
-  border: none;
-  padding: 2px 0 0;
-  border-radius: 0;
+/* submit button */
+.ef-submit {
+  width: 100%;
+  padding: 14px;
+  font-size: 1rem;
+  border-radius: 12px;
+  font-weight: 700;
+  letter-spacing: .02em;
 }
 
 /* ---- Filters ---- */

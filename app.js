@@ -784,15 +784,18 @@
     const hoursInput = $("entryHours");
     const hint = $("startTimeHint");
     if (!cat) return;
+    const timeGroup = document.getElementById("entryTimeGroup");
     if (cat.type === "flat") {
       startField.style.display = "none";
       endField.style.display = "none";
       hoursField.style.display = "none";
+      if (timeGroup) timeGroup.style.display = "none";
       startInput.value = "";
       endInput.value = "";
       hoursInput.value = "";
       hoursInput.required = false;
     } else if (cat.flexibleTimes) {
+      if (timeGroup) timeGroup.style.display = "";
       startField.style.display = "";
       endField.style.display = "";
       hoursField.style.display = "";
@@ -800,6 +803,7 @@
       hoursInput.required = true;
       recalcHoursFromEndTime();
     } else {
+      if (timeGroup) timeGroup.style.display = "";
       startField.style.display = "none";
       startInput.value = "";
       endField.style.display = "";
