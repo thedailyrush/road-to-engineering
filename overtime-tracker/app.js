@@ -9,7 +9,7 @@
     { name: "Pre-time",                  type: "hourly", rate: 350,  startTime: "06:00" },
     { name: "Bellevue Extra Att.",       type: "hourly", rate: 350,  startTime: "17:00" },
     { name: "Weekend Back Up 1",         type: "hourly", rate: 350,  startTime: "08:00" },
-    { name: "Weekend Back Up 2",         type: "hourly", rate: 350,  startTime: "08:00" },
+    { name: "Weekend Back Up 2",         type: "hourly", rate: 350,  startTime: "08:00", flexibleTimes: true },
     { name: "Weekend Flat Pay",          type: "flat",   rate: 400,  startTime: "" },
     { name: "Tisch M-Th Overnight",      type: "flat",   rate: 300,  startTime: "" },
     { name: "Tisch Friday Overnight",    type: "flat",   rate: 1300, startTime: "" },
@@ -53,6 +53,7 @@
   function migrate() {
     for (const c of state.categories) {
       if (c.startTime === undefined) c.startTime = c.type === "hourly" ? "17:00" : "";
+      if (c.flexibleTimes === undefined) c.flexibleTimes = false;
     }
   }
 
@@ -121,9 +122,9 @@
           <input type="number" data-field="rate" min="0" step="0.01" value="${cat.rate}" />
         </td>
         <td class="num">
-          <input type="time" data-field="startTime"
-                 value="${escapeAttr(cat.startTime || "")}"
-                 ${cat.type === "flat" ? "disabled" : ""} />
+          ${cat.type === "flat"
+            ? '<span class="muted">—</span>'
+            : `<input type="time" data-field="startTime" value="${escapeAttr(cat.startTime || "")}" />`}
         </td>
         <td class="num">
           <button class="btn btn-icon del" data-action="delete-cat" title="Delete category">Delete</button>
@@ -192,9 +193,10 @@
 
       const tr = document.createElement("tr");
       tr.dataset.id = e.id;
+      const effectiveStart = cat && cat.flexibleTimes ? e.startTime : (cat && cat.startTime);
       const hoursLabel = cat && cat.type === "hourly"
-        ? (e.endTime && cat.startTime
-            ? `${fmtHours(hours)} <span class="muted small">(${formatTime(cat.startTime)}–${formatTime(e.endTime)})</span>`
+        ? (effectiveStart && e.endTime
+            ? `${fmtHours(hours)} <span class="muted small">(${formatTime(effectiveStart)}–${formatTime(e.endTime)})</span>`
             : fmtHours(hours))
         : "—";
       tr.innerHTML = `
@@ -280,20 +282,32 @@
   function syncHoursField() {
     const sel = $("entryCategory");
     const cat = categoryById(sel.value);
+    const startField = $("startTimeField");
     const endField = $("endTimeField");
     const hoursField = $("hoursField");
+    const startInput = $("entryStartTime");
     const endInput = $("entryEndTime");
     const hoursInput = $("entryHours");
     const hint = $("startTimeHint");
-    const hoursAuto = $("hoursAuto");
     if (!cat) return;
     if (cat.type === "flat") {
+      startField.style.display = "none";
       endField.style.display = "none";
       hoursField.style.display = "none";
+      startInput.value = "";
       endInput.value = "";
       hoursInput.value = "";
       hoursInput.required = false;
+    } else if (cat.flexibleTimes) {
+      startField.style.display = "";
+      endField.style.display = "";
+      hoursField.style.display = "";
+      hint.textContent = "";
+      hoursInput.required = true;
+      recalcHoursFromEndTime();
     } else {
+      startField.style.display = "none";
+      startInput.value = "";
       endField.style.display = "";
       hoursField.style.display = "";
       hint.textContent = cat.startTime
@@ -307,16 +321,20 @@
   function recalcHoursFromEndTime() {
     const sel = $("entryCategory");
     const cat = categoryById(sel.value);
+    const startInput = $("entryStartTime");
     const endInput = $("entryEndTime");
     const hoursInput = $("entryHours");
     const hoursAuto = $("hoursAuto");
     if (!cat || cat.type !== "hourly") return;
-    if (endInput.value && cat.startTime) {
-      const h = calcHoursFromTimes(cat.startTime, endInput.value);
+    const effectiveStart = cat.flexibleTimes ? startInput.value : cat.startTime;
+    if (endInput.value && effectiveStart) {
+      const h = calcHoursFromTimes(effectiveStart, endInput.value);
       hoursInput.value = (Math.round(h * 100) / 100).toString();
       hoursAuto.textContent = "(auto from times)";
     } else {
-      hoursAuto.textContent = "(enter manually or set times)";
+      hoursAuto.textContent = cat.flexibleTimes
+        ? "(enter start & end times, or manually)"
+        : "(enter manually or set times)";
     }
     updatePreview();
   }
@@ -346,6 +364,7 @@
       $("hoursAuto").textContent = "(manual)";
       updatePreview();
     });
+    $("entryStartTime").addEventListener("input", recalcHoursFromEndTime);
     $("entryEndTime").addEventListener("input", recalcHoursFromEndTime);
 
     $("entryForm").addEventListener("submit", (ev) => {
@@ -353,6 +372,7 @@
       const cat = categoryById($("entryCategory").value);
       if (!cat) return;
       const hours = cat.type === "hourly" ? Number($("entryHours").value) || 0 : 0;
+      const entryStartTime = cat.flexibleTimes ? $("entryStartTime").value : "";
       const endTime = cat.type === "hourly" ? $("entryEndTime").value : "";
       if (cat.type === "hourly" && hours <= 0) {
         $("entryEndTime").focus();
@@ -363,6 +383,7 @@
         date: $("entryDate").value || new Date().toISOString().slice(0, 10),
         categoryId: cat.id,
         hours,
+        startTime: entryStartTime,
         endTime,
         status: $("entryStatus").value,
         note: $("entryNote").value.trim(),
@@ -370,6 +391,7 @@
       state.entries.push(entry);
       save();
       $("entryNote").value = "";
+      $("entryStartTime").value = "";
       $("entryEndTime").value = "";
       $("entryHours").value = "";
       renderEntries();
