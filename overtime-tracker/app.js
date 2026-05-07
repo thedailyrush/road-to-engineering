@@ -465,12 +465,21 @@
     return state.categories.find((c) => c.id === id);
   }
 
-  // Hours worked past 7 PM are paid at the bumped rate.
+  // Hours worked past 7 PM are paid at the bumped rate, but only for shifts
+  // dated in the late-rate effective year or later.
   const LATE_RATE_THRESHOLD_HOUR = 19;
   const LATE_HOURLY_RATE = 375;
+  const LATE_RATE_EFFECTIVE_YEAR = 2026;
 
-  function calcHourlyEarned(baseRate, totalHours, effectiveStart, endTime) {
+  function isLateRateEligible(dateStr) {
+    if (!dateStr) return false;
+    const year = parseInt(dateStr.slice(0, 4), 10);
+    return Number.isFinite(year) && year >= LATE_RATE_EFFECTIVE_YEAR;
+  }
+
+  function calcHourlyEarned(baseRate, totalHours, effectiveStart, endTime, date) {
     if (totalHours <= 0) return 0;
+    if (!isLateRateEligible(date)) return baseRate * totalHours;
     if (!effectiveStart || !endTime) return baseRate * totalHours;
     const [sh, sm] = effectiveStart.split(":").map(Number);
     const [eh, em] = endTime.split(":").map(Number);
@@ -495,7 +504,8 @@
       Number(cat.rate) || 0,
       Number(entry.hours) || 0,
       effectiveStart,
-      entry.endTime
+      entry.endTime,
+      entry.date
     );
   }
 
@@ -963,8 +973,9 @@
     const hours = Number($("entryHours").value) || 0;
     const effectiveStart = cat.flexibleTimes ? $("entryStartTime").value : cat.startTime;
     const endTime = $("entryEndTime").value;
+    const date = $("entryDate").value;
     $("entryPreview").textContent = fmtMoney(
-      calcHourlyEarned(Number(cat.rate) || 0, hours, effectiveStart, endTime)
+      calcHourlyEarned(Number(cat.rate) || 0, hours, effectiveStart, endTime, date)
     );
   }
 
@@ -1010,6 +1021,7 @@
       syncHoursField();
       updatePreview();
     });
+    $("entryDate").addEventListener("input", updatePreview);
     $("entryStartTime").addEventListener("input", recalcHoursFromEndTime);
     $("entryEndTime").addEventListener("input", recalcHoursFromEndTime);
     $("entryHours").addEventListener("input", () => {
