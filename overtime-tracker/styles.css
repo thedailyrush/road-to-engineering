@@ -437,23 +437,24 @@ body {
    8 columns → 2-row card: date/status top, category middle, hours/earned/actions bottom.
    ================================================================ */
 @media (max-width: 640px) {
-  #entriesPanel .table-wrap { overflow-x: visible; }
+  /* remove the scroll container entirely */
+  #entriesPanel .table-wrap { overflow: visible; }
 
-  #entriesTable        { display: block; }
+  #entriesTable        { display: block; width: 100%; }
   #entriesTable thead  { display: none; }
   #entriesTable tfoot  { display: none; }
   #entriesTable tbody  { display: flex; flex-direction: column; gap: 8px; }
+
+  /* override base min-width column constraints so they don't inflate cards */
+  #entriesBody td:nth-child(2),
+  #entriesBody td:nth-child(3),
+  #entriesBody td:nth-child(7) { min-width: 0; white-space: normal; }
 
   /* empty row */
   #entriesTable tr:not([data-id]) { display: block; }
   #entriesTable tr:not([data-id]) td { display: block; border: none; }
 
-  /* each entry row → card
-     cols: [checkbox 28px] [flex left] [flex right] [actions auto]
-     row1: chk | date          | status pill  | –
-     row2: chk | category      |              | –
-     row3: chk | hours         | earned       | del
-  */
+  /* each entry row → card */
   #entriesTable tr[data-id] {
     display: grid;
     grid-template-areas:
@@ -463,6 +464,7 @@ body {
     grid-template-columns: 28px 1fr 1fr auto;
     gap: 5px 8px;
     padding: 12px;
+    width: 100%;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     background: var(--panel-2);
@@ -471,7 +473,7 @@ body {
   #entriesTable tr[data-id] td {
     border: none; padding: 0; white-space: normal;
     display: flex; align-items: center;
-    text-align: left;
+    text-align: left; min-width: 0;
   }
 
   /* checkbox */
