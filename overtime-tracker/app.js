@@ -247,6 +247,32 @@
       if (changed) dirty.push(c);
     }
     for (const c of dirty) dbUpsertCategory(c);
+
+    // Recompute hours to 2-decimal precision from start/end times.
+    const dirtyEntries = [];
+    for (const e of state.entries) {
+      const cat = categoryById(e.categoryId);
+      if (!cat || cat.type !== "hourly") continue;
+      const effectiveStart = cat.flexibleTimes ? e.startTime : cat.startTime;
+      if (!effectiveStart || !e.endTime) continue;
+      const exact = calcHoursFromTimes(effectiveStart, e.endTime);
+      const rounded = Math.round(exact * 100) / 100;
+      if (rounded > 0 && rounded !== e.hours) {
+        e.hours = rounded;
+        dirtyEntries.push(e);
+      }
+    }
+    if (dirtyEntries.length > 0) dbBatchUpsertEntries(dirtyEntries);
+  }
+
+  async function dbBatchUpsertEntries(entries) {
+    const userId = state.user.id;
+    const rows = entries.map((e) => entryToRow(e, userId));
+    const BATCH = 25;
+    for (let i = 0; i < rows.length; i += BATCH) {
+      const { error } = await sb.from("entries").upsert(rows.slice(i, i + BATCH));
+      if (error) console.error("batch upsert entries:", error);
+    }
   }
 
   async function dbSeedDefaults() {
@@ -459,7 +485,7 @@
   // ---- Helpers -------------------------------------------------------------
   const fmtMoney = (n) =>
     (n || 0).toLocaleString(undefined, { style: "currency", currency: "USD" });
-  const fmtHours = (n) => (Number(n) || 0).toFixed(1);
+  const fmtHours = (n) => (Number(n) || 0).toFixed(2);
 
   function categoryById(id) {
     return state.categories.find((c) => c.id === id);
