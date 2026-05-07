@@ -315,7 +315,14 @@
   }
 
   async function dbSeedHistoricalData() {
+    // Refresh the session so we always have a valid token before a bulk insert
+    const { data: refreshData, error: refreshErr } = await sb.auth.refreshSession();
+    if (refreshErr || !refreshData?.session) {
+      throw new Error("Session expired — please sign out and sign in again, then retry.");
+    }
+    state.user = refreshData.session.user;
     const userId = state.user.id;
+
     const nameToId = Object.fromEntries(state.categories.map((c) => [c.name, c.id]));
 
     // Create any categories that don't exist yet
@@ -353,9 +360,18 @@
       note: "",
     }));
 
-    const { data: saved, error } = await sb.from("entries").insert(entryRows).select();
-    if (error) throw error;
-    state.entries = [...state.entries, ...(saved || []).map(rowToEntry)];
+    // Insert in batches of 25 to stay well within PostgREST limits
+    const BATCH = 25;
+    const allSaved = [];
+    for (let i = 0; i < entryRows.length; i += BATCH) {
+      const { data: saved, error } = await sb
+        .from("entries")
+        .insert(entryRows.slice(i, i + BATCH))
+        .select();
+      if (error) throw error;
+      allSaved.push(...(saved || []));
+    }
+    state.entries = [...state.entries, ...allSaved.map(rowToEntry)];
   }
 
   // ---- Auth ----------------------------------------------------------------
