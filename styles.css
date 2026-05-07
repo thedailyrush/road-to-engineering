@@ -374,6 +374,61 @@ body {
   .filters { flex-direction: column; }
   .filters input, .filters select { width: 100%; flex: none; }
   .user-chip { display: none; }
-  .nav-item span { display: none; }   /* icon-only nav on tiny screens */
+  .nav-item span { display: none; }
   .nav-item { min-width: 44px; padding: 10px 12px; }
+}
+
+/* ---- Categories: card layout on small screens (≤ 700px) ---- */
+@media (max-width: 700px) {
+  /* Let the table-wrap clip without horizontal scroll */
+  #categoriesPanel .table-wrap { overflow-x: visible; }
+
+  /* Convert table structure to block so we can use CSS grid on rows */
+  #categoriesTable          { display: block; }
+  #categoriesTable thead    { display: none; }
+  #categoriesTable tbody    { display: flex; flex-direction: column; gap: 10px; }
+
+  /* Each category row becomes a 2-row card */
+  #categoriesTable tr.row-edit {
+    display: grid;
+    grid-template-areas:
+      "name  name  del"
+      "type  rate  time";
+    grid-template-columns: auto minmax(70px, 1fr) 94px;
+    gap: 8px 10px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--panel-2);
+  }
+
+  /* Reset all td styles inside the card */
+  #categoriesTable tr.row-edit td {
+    border: none;
+    padding: 0;
+    white-space: normal;
+    display: flex;
+    align-items: center;
+  }
+
+  /* Grid area assignments */
+  #categoriesTable tr.row-edit td:nth-child(1) { grid-area: name; }
+  #categoriesTable tr.row-edit td:nth-child(2) { grid-area: type; }
+  #categoriesTable tr.row-edit td:nth-child(3) { grid-area: rate; }
+  #categoriesTable tr.row-edit td:nth-child(4) { grid-area: time; }
+  #categoriesTable tr.row-edit td:nth-child(5) { grid-area: del; justify-content: flex-end; align-items: flex-start; }
+
+  /* Inputs fill their cells */
+  #categoriesTable tr.row-edit td:nth-child(1) input { width: 100%; font-weight: 600; font-size: 0.95rem; }
+  #categoriesTable tr.row-edit td:nth-child(3) input { width: 100%; }
+  #categoriesTable tr.row-edit td:nth-child(4) input { width: 100%; }
+
+  /* Shrink toggle to fit the auto column */
+  #categoriesTable .toggle       { width: 84px; }
+  #categoriesTable .toggle .knob { width: 38px; }
+  #categoriesTable .toggle[data-type="flat"] .knob { left: 42px; }
+
+  /* Empty / loading state row */
+  #categoriesTable tr:not(.row-edit) { display: block; }
+  #categoriesTable tr:not(.row-edit) td { display: block; border: none; }
 }
