@@ -343,7 +343,7 @@ body {
 
 /* ---- Mobile (≤ 640px) ---- */
 @media (max-width: 640px) {
-  :root { --pad: 16px; --nav-h: 74px; }
+  :root { --pad: 16px; --nav-h: 100px; }
 
   /* topbar */
   .topbar { padding: 12px var(--pad); }
@@ -357,8 +357,8 @@ body {
   .stat { padding: 10px 12px; }
   .stat .value { font-size: 1.15rem; }
 
-  /* form: single column */
-  .form { grid-template-columns: 1fr; }
+  /* form stays 2-column on mobile; inputs have width:100% so they won't overflow */
+  .form { gap: 10px; }
 
   /* filters: stack */
   .filters { flex-direction: column; }
