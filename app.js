@@ -764,12 +764,95 @@
     $("statShifts").textContent = String(state.entries.length);
   }
 
+  function renderMetrics() {
+    const yearSel = $("metricsYear");
+    const monthlyEl = $("metricsMonthly");
+    const catsEl = $("metricsCategories");
+    if (!yearSel || !monthlyEl || !catsEl) return;
+
+    // populate year selector from available entry dates
+    const years = [...new Set(state.entries.map((e) => e.date && e.date.slice(0, 4)).filter(Boolean))].sort().reverse();
+    const curYear = yearSel.value || (years[0] ?? String(new Date().getFullYear()));
+    yearSel.innerHTML = years.map((y) => `<option value="${y}"${y === curYear ? " selected" : ""}>${y}</option>`).join("");
+    if (!yearSel.value) yearSel.value = curYear;
+
+    const filtered = state.entries.filter((e) => e.date && e.date.startsWith(curYear));
+
+    // ---- monthly overview ----
+    const monthMap = new Map();
+    for (const e of filtered) {
+      const m = e.date.slice(0, 7);
+      if (!monthMap.has(m)) monthMap.set(m, { hours: 0, income: 0 });
+      const d = monthMap.get(m);
+      d.income += calcEarned(e);
+      const cat = categoryById(e.categoryId);
+      if (cat && cat.type === "hourly") d.hours += Number(e.hours) || 0;
+    }
+    const months = [...monthMap.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+    const maxHours  = Math.max(...months.map(([, d]) => d.hours), 1);
+    const maxIncome = Math.max(...months.map(([, d]) => d.income), 1);
+
+    monthlyEl.innerHTML = months.length ? months.map(([key, d]) => {
+      const [y, mo] = key.split("-");
+      const label = new Date(+y, +mo - 1, 1).toLocaleDateString(undefined, { month: "short", year: "numeric" });
+      const hPct  = (d.hours  / maxHours  * 100).toFixed(1);
+      const iPct  = (d.income / maxIncome * 100).toFixed(1);
+      return `<div class="metrics-row">
+        <div class="metrics-month">${escapeHtml(label)}</div>
+        <div class="metrics-bars">
+          <div class="metrics-bar-row">
+            <span class="metrics-bar-lbl">Hours</span>
+            <div class="metrics-track"><div class="metrics-fill hours" style="width:${hPct}%"></div></div>
+            <span class="metrics-bar-val">${fmtHours(d.hours)}</span>
+          </div>
+          <div class="metrics-bar-row">
+            <span class="metrics-bar-lbl">Income</span>
+            <div class="metrics-track"><div class="metrics-fill income" style="width:${iPct}%"></div></div>
+            <span class="metrics-bar-val">${fmtMoney(d.income)}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join("") : `<p class="empty">No entries for ${curYear}.</p>`;
+
+    // ---- category breakdown ----
+    const catMap = new Map();
+    for (const e of filtered) {
+      const cat = categoryById(e.categoryId);
+      if (!cat) continue;
+      if (!catMap.has(cat.id)) catMap.set(cat.id, { name: cat.name, type: cat.type, income: 0, hours: 0 });
+      const c = catMap.get(cat.id);
+      c.income += calcEarned(e);
+      if (cat.type === "hourly") c.hours += Number(e.hours) || 0;
+    }
+    const cats = [...catMap.values()].sort((a, b) => b.income - a.income);
+    const totalIncome  = cats.reduce((s, c) => s + c.income, 0);
+    const maxCatIncome = Math.max(...cats.map((c) => c.income), 1);
+
+    catsEl.innerHTML = cats.length ? cats.map((c) => {
+      const pct    = totalIncome > 0 ? Math.round(c.income / totalIncome * 100) : 0;
+      const barPct = (c.income / maxCatIncome * 100).toFixed(1);
+      return `<div class="metrics-cat-row">
+        <div class="metrics-cat-top">
+          <span class="metrics-cat-name">${escapeHtml(c.name)}</span>
+          <span class="pill ${c.type}">${c.type}</span>
+          <span class="metrics-cat-amount">${fmtMoney(c.income)}</span>
+          <span class="metrics-cat-pct">${pct}%</span>
+        </div>
+        <div class="metrics-cat-track"><div class="metrics-cat-fill" style="width:${barPct}%"></div></div>
+        ${c.hours > 0 ? `<span class="metrics-cat-sub">${fmtHours(c.hours)} hours</span>` : ""}
+      </div>`;
+    }).join("") : `<p class="empty">No entries for ${curYear}.</p>`;
+
+    yearSel.onchange = () => renderMetrics();
+  }
+
   function renderAll() {
     renderCategories();
     renderCategoryDropdowns();
     buildMonthOptions();
     renderEntries();
     renderSummary();
+    renderMetrics();
   }
 
   // ---- Entry form helpers --------------------------------------------------
