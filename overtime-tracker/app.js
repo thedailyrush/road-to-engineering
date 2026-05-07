@@ -53,7 +53,9 @@
   function migrate() {
     for (const c of state.categories) {
       if (c.startTime === undefined) c.startTime = c.type === "hourly" ? "17:00" : "";
-      if (c.flexibleTimes === undefined) c.flexibleTimes = false;
+      if (c.flexibleTimes === undefined) {
+        c.flexibleTimes = c.name === "Weekend Back Up 2";
+      }
     }
   }
 
