@@ -161,6 +161,7 @@
     entries: [],
     filter: { search: "", category: "", status: "", month: "" },
     editingCategoryId: null,
+    editingEntryId: null,
     user: null,
     selectedEntries: new Set(),
     visibleEntryIds: new Set(),
@@ -652,6 +653,7 @@
         <td><span class="pill ${e.status}">${e.status}</span></td>
         <td>${escapeHtml(e.note || "")}</td>
         <td class="num">
+          <button class="btn btn-icon" data-action="edit-entry" title="Edit entry">✎</button>
           <button class="btn btn-icon" data-action="cycle-status" title="Cycle status">↻</button>
           <button class="btn btn-icon del" data-action="delete-entry" title="Delete entry">✕</button>
         </td>
@@ -933,6 +935,41 @@
     $("entryPreview").textContent = fmtMoney(earned);
   }
 
+  function resetEntryForm() {
+    $("entryNote").value = "";
+    $("entryStartTime").value = "";
+    $("entryEndTime").value = "";
+    $("entryHours").value = "";
+    $("hoursAuto").textContent = "";
+    updatePreview();
+  }
+
+  function exitEditMode() {
+    state.editingEntryId = null;
+    $("entrySubmitBtn").textContent = "Add Entry";
+    $("entryCancelEdit").style.display = "none";
+    resetEntryForm();
+  }
+
+  function populateFormForEdit(entry) {
+    state.editingEntryId = entry.id;
+    $("entryDate").value = entry.date || "";
+    const cat = categoryById(entry.categoryId);
+    if (cat) $("entryCategory").value = cat.id;
+    syncHoursField();
+    if (entry.startTime) $("entryStartTime").value = entry.startTime;
+    if (entry.endTime) $("entryEndTime").value = entry.endTime;
+    $("entryHours").value = entry.hours > 0 ? entry.hours : "";
+    $("hoursAuto").textContent = entry.startTime || entry.endTime ? "(auto from times)" : "";
+    $("entryStatus").value = entry.status || "pending";
+    $("entryNote").value = entry.note || "";
+    updatePreview();
+    $("entrySubmitBtn").textContent = "Update Entry";
+    $("entryCancelEdit").style.display = "";
+    document.querySelector('.nav-item[data-tab="home"]').click();
+    $("entryPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   // ---- Wire ----------------------------------------------------------------
   function wire() {
     $("entryDate").value = new Date().toISOString().slice(0, 10);
@@ -958,26 +995,45 @@
         $("entryEndTime").focus();
         return;
       }
-      const entry = {
-        id: uid(),
-        date: $("entryDate").value || new Date().toISOString().slice(0, 10),
-        categoryId: cat.id,
-        hours,
-        startTime: entryStartTime,
-        endTime,
-        status: $("entryStatus").value,
-        note: $("entryNote").value.trim(),
-      };
-      state.entries.push(entry);
-      renderEntries();
-      renderSummary();
-      $("entryNote").value = "";
-      $("entryStartTime").value = "";
-      $("entryEndTime").value = "";
-      $("entryHours").value = "";
-      updatePreview();
-      await dbUpsertEntry(entry);
+
+      if (state.editingEntryId) {
+        const existing = state.entries.find((e) => e.id === state.editingEntryId);
+        if (existing) {
+          Object.assign(existing, {
+            date: $("entryDate").value || new Date().toISOString().slice(0, 10),
+            categoryId: cat.id,
+            hours,
+            startTime: entryStartTime,
+            endTime,
+            status: $("entryStatus").value,
+            note: $("entryNote").value.trim(),
+          });
+          renderEntries();
+          renderSummary();
+          renderMetrics();
+          await dbUpsertEntry(existing);
+        }
+        exitEditMode();
+      } else {
+        const entry = {
+          id: uid(),
+          date: $("entryDate").value || new Date().toISOString().slice(0, 10),
+          categoryId: cat.id,
+          hours,
+          startTime: entryStartTime,
+          endTime,
+          status: $("entryStatus").value,
+          note: $("entryNote").value.trim(),
+        };
+        state.entries.push(entry);
+        renderEntries();
+        renderSummary();
+        resetEntryForm();
+        await dbUpsertEntry(entry);
+      }
     });
+
+    $("entryCancelEdit").addEventListener("click", exitEditMode);
 
     // Categories
     $("categoriesBody").addEventListener("click", async (ev) => {
@@ -1039,7 +1095,9 @@
       const entry = state.entries.find((e) => e.id === row.dataset.id);
       if (!entry) return;
       const action = ev.target.closest("[data-action]")?.dataset.action;
-      if (action === "delete-entry") {
+      if (action === "edit-entry") {
+        populateFormForEdit(entry);
+      } else if (action === "delete-entry") {
         state.entries = state.entries.filter((e) => e.id !== entry.id);
         renderEntries();
         renderSummary();
