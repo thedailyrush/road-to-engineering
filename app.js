@@ -4,10 +4,10 @@
   const STORAGE_KEY = "overtime-tracker-v1";
 
   const DEFAULT_CATEGORIES = [
-    { name: "Overtime",                  type: "hourly", rate: 350,  startTime: "17:00" },
+    { name: "Overtime",                  type: "hourly", rate: 350,  startTime: "15:50" },
     { name: "Overtime (Late)",           type: "hourly", rate: 350,  startTime: "21:00" },
-    { name: "Pre-time",                  type: "hourly", rate: 350,  startTime: "06:00" },
-    { name: "Bellevue Extra Att.",       type: "hourly", rate: 350,  startTime: "17:00" },
+    { name: "Pre-time",                  type: "hourly", rate: 350,  startTime: "06:50", flexibleTimes: true },
+    { name: "Bellevue Extra Att.",       type: "hourly", rate: 350,  startTime: "07:30" },
     { name: "Weekend Back Up 1",         type: "hourly", rate: 350,  startTime: "08:00" },
     { name: "Weekend Back Up 2",         type: "hourly", rate: 350,  startTime: "08:00", flexibleTimes: true },
     { name: "Weekend Flat Pay",          type: "flat",   rate: 400,  startTime: "" },
@@ -50,12 +50,21 @@
     }
   }
 
+  const FLEXIBLE_CATEGORIES = new Set(["Weekend Back Up 2", "Pre-time"]);
+  const CORRECT_START_TIMES = {
+    "Overtime": "15:50",
+    "Overtime (Late)": "21:00",
+    "Pre-time": "06:50",
+    "Bellevue Extra Att.": "07:30",
+    "Weekend Back Up 1": "08:00",
+    "Weekend Back Up 2": "08:00",
+  };
+
   function migrate() {
     for (const c of state.categories) {
       if (c.startTime === undefined) c.startTime = c.type === "hourly" ? "17:00" : "";
-      if (c.flexibleTimes === undefined) {
-        c.flexibleTimes = c.name === "Weekend Back Up 2";
-      }
+      if (c.flexibleTimes === undefined) c.flexibleTimes = FLEXIBLE_CATEGORIES.has(c.name);
+      if (c.name in CORRECT_START_TIMES) c.startTime = CORRECT_START_TIMES[c.name];
     }
   }
 
