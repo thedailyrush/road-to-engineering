@@ -8,16 +8,6 @@
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   // ---- Constants -----------------------------------------------------------
-  const FLEXIBLE_CATEGORIES = new Set(["Weekend Back Up 2", "Pre-time"]);
-  const CORRECT_START_TIMES = {
-    "Overtime": "15:50",
-    "Overtime (Late)": "21:00",
-    "Pre-time": "06:50",
-    "Bellevue Extra Att.": "07:30",
-    "Weekend Back Up 1": "08:00",
-    "Weekend Back Up 2": "08:00",
-  };
-
   const DEFAULT_CATEGORIES = [
     { name: "Overtime",                  type: "hourly", rate: 350,  startTime: "15:50" },
     { name: "Overtime (Late)",           type: "hourly", rate: 350,  startTime: "21:00" },
@@ -39,122 +29,6 @@
 
   const uid = () =>
     Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-
-  // Historical entries from Google Sheet.
-  // Columns: [categoryName, date(YYYY-MM-DD), endTime(HH:MM 24h), flexStartTime(HH:MM), hours, status]
-  // flexStartTime is only non-empty for Pre-time (flexible category).
-  // endTime is "" for flat-pay categories.
-  const SHEET_ENTRIES = [
-    ["Overtime","2025-08-05","17:30","",1.7,"deposited"],
-    ["Overtime","2025-08-07","16:59","",1.2,"deposited"],
-    ["Overtime","2025-08-18","18:00","",2.2,"deposited"],
-    ["Overtime","2025-08-22","16:22","",0.5,"deposited"],
-    ["Overtime","2025-08-25","19:05","",3.3,"deposited"],
-    ["Overtime (Late)","2025-08-28","21:45","",0.8,"deposited"],
-    ["Pre-time","2025-08-28","12:00","06:50",5.2,"deposited"],
-    ["Overtime","2025-09-04","19:14","",3.4,"deposited"],
-    ["Bellevue Extra Att.","2025-09-07","10:30","",3.0,"deposited"],
-    ["Overtime","2025-09-08","18:40","",2.8,"deposited"],
-    ["Overtime","2025-09-12","17:04","",1.2,"deposited"],
-    ["Weekend Flat Pay","2025-09-14","","",0,"deposited"],
-    ["Overtime (Late)","2025-09-16","22:12","",1.2,"deposited"],
-    ["Pre-time","2025-09-19","12:00","06:50",5.2,"deposited"],
-    ["Overtime","2025-09-22","16:31","",0.7,"deposited"],
-    ["Overtime (Late)","2025-09-23","21:45","",0.8,"deposited"],
-    ["Overtime","2025-09-25","17:20","",1.5,"deposited"],
-    ["Overtime","2025-09-29","16:45","",0.9,"deposited"],
-    ["Overtime","2025-10-01","16:10","",0.3,"deposited"],
-    ["Overtime","2025-10-02","17:12","",1.4,"deposited"],
-    ["Overtime","2025-10-06","19:08","",3.3,"deposited"],
-    ["Overtime (Late)","2025-10-07","21:57","",1.0,"deposited"],
-    ["Weekend Flat Pay","2025-10-11","","",0,"deposited"],
-    ["Weekend Back Up 1","2025-10-11","16:34","",8.6,"deposited"],
-    ["Overtime","2025-10-14","17:03","",1.2,"deposited"],
-    ["Overtime","2025-10-16","18:08","",2.3,"deposited"],
-    ["Overtime","2025-10-17","16:23","",0.6,"deposited"],
-    ["Overtime","2025-10-27","21:33","",5.7,"deposited"],
-    ["Overtime","2025-10-30","17:47","",2.0,"deposited"],
-    ["Overtime","2025-10-31","18:00","",2.2,"deposited"],
-    ["Bellevue Extra Att.","2025-11-02","13:54","",6.4,"deposited"],
-    ["Overtime","2025-11-06","16:56","",1.1,"deposited"],
-    ["Weekend Back Up 1","2025-11-08","19:02","",11.0,"deposited"],
-    ["Overtime","2025-11-11","18:50","",3.0,"deposited"],
-    ["Overtime","2025-11-12","18:25","",2.6,"deposited"],
-    ["Overtime","2025-11-13","16:34","",0.7,"deposited"],
-    ["Overtime","2025-11-14","16:43","",0.9,"deposited"],
-    ["Weekend Back Up 1","2025-11-16","18:25","",10.4,"deposited"],
-    ["Overtime","2025-11-17","18:11","",2.4,"deposited"],
-    ["Overtime","2025-11-18","16:20","",0.5,"deposited"],
-    ["Overtime","2025-11-19","17:05","",1.3,"deposited"],
-    ["Overtime","2025-11-21","17:32","",1.7,"deposited"],
-    ["Overtime","2025-11-24","18:35","",2.8,"deposited"],
-    ["Overtime","2025-11-25","18:10","",2.3,"deposited"],
-    ["Overtime","2025-12-08","21:20","",5.5,"deposited"],
-    ["Weekend Flat Pay","2025-12-13","","",0,"deposited"],
-    ["Weekend Flat Pay","2025-12-14","","",0,"deposited"],
-    ["Holiday","2025-12-25","","",0,"deposited"],
-    ["Overtime","2025-12-09","20:13","",4.4,"deposited"],
-    ["Overtime","2025-12-12","16:15","",0.4,"deposited"],
-    ["Weekend Back Up 1","2025-12-14","15:33","",7.6,"deposited"],
-    ["Overtime","2025-12-16","20:33","",4.7,"deposited"],
-    ["Overtime (Late)","2025-12-19","23:10","",2.2,"deposited"],
-    ["Overtime","2025-12-22","16:14","",0.4,"deposited"],
-    ["Pre-time","2025-12-26","09:03","06:50",2.2,"deposited"],
-    ["Bellevue Extra Att.","2025-12-28","14:05","",6.6,"deposited"],
-    ["Overtime","2025-12-29","16:39","",0.8,"deposited"],
-    ["Bellevue Long Call","2026-01-02","","",0,"deposited"],
-    ["Overtime","2026-01-05","17:48","",2.0,"deposited"],
-    ["Overtime","2026-01-07","16:21","",0.5,"deposited"],
-    ["Overtime","2026-01-08","17:45","",1.9,"deposited"],
-    ["Overtime","2026-01-09","16:50","",1.0,"deposited"],
-    ["Tisch M-Th Overnight","2026-01-26","","",0,"deposited"],
-    ["Overtime","2026-01-13","19:55","",4.1,"deposited"],
-    ["Overtime","2026-01-14","20:58","",5.1,"deposited"],
-    ["Pre-time","2026-01-26","13:00","07:20",5.7,"deposited"],
-    ["Overtime","2026-01-15","16:37","",0.8,"deposited"],
-    ["Weekend Back Up 1","2026-01-24","16:53","",8.9,"deposited"],
-    ["Bellevue Extra Att.","2026-01-31","13:12","",5.7,"deposited"],
-    ["Overtime","2026-01-28","15:59","",0.2,"deposited"],
-    ["Overtime","2026-01-29","19:14","",3.4,"deposited"],
-    ["Overtime","2026-02-03","19:51","",4.0,"deposited"],
-    ["Overtime","2026-02-04","18:19","",2.5,"deposited"],
-    ["Pre-time","2026-02-06","13:00","06:50",6.2,"deposited"],
-    ["Tisch Friday Overnight","2026-02-06","","",0,"deposited"],
-    ["Overtime","2026-02-09","16:57","",1.1,"deposited"],
-    ["Overtime","2026-02-10","18:58","",3.1,"deposited"],
-    ["Overtime","2026-02-11","17:06","",1.3,"deposited"],
-    ["Overtime (Late)","2026-02-12","00:10","",3.2,"deposited"],
-    ["Overtime (Late)","2026-03-02","22:00","",1.0,"submitted"],
-    ["Overtime","2026-03-05","16:43","",0.9,"submitted"],
-    ["Overtime","2026-03-06","18:21","",2.5,"submitted"],
-    ["Weekend Back Up 1","2026-03-07","17:47","",9.8,"submitted"],
-    ["Bellevue Long Call","2026-03-09","","",0,"submitted"],
-    ["Overtime","2026-03-10","17:03","",1.2,"submitted"],
-    ["Overtime","2026-03-12","16:13","",0.4,"submitted"],
-    ["Overtime","2026-03-13","15:56","",0.1,"submitted"],
-    ["Overtime","2026-03-17","16:07","",0.3,"submitted"],
-    ["Pre-time","2026-03-19","12:00","06:50",5.2,"submitted"],
-    ["Overtime","2026-03-20","16:24","",0.6,"submitted"],
-    ["Overtime","2026-03-23","16:43","",0.9,"submitted"],
-    ["Overtime","2026-03-25","16:10","",0.3,"submitted"],
-    ["Overtime","2026-03-30","16:18","",0.5,"submitted"],
-    ["Overtime","2026-03-31","16:50","",1.0,"submitted"],
-    ["Overtime","2026-04-06","17:10","",1.3,"submitted"],
-    ["Overtime","2026-04-07","15:51","",0.0,"submitted"],
-    ["Pre-time","2026-04-08","12:00","06:50",5.2,"submitted"],
-    ["Overtime (Late)","2026-04-08","21:10","",0.2,"submitted"],
-    ["Pre-time","2026-04-14","12:00","06:50",5.2,"submitted"],
-    ["Overtime (Late)","2026-04-14","21:35","",0.6,"submitted"],
-    ["Overtime","2026-04-23","17:17","",1.5,"submitted"],
-    ["Overtime","2026-04-24","19:30","",3.7,"submitted"],
-    ["Bellevue Extra Att.","2026-04-25","14:57","",7.5,"submitted"],
-    ["Bellevue Long Call","2026-04-27","","",0,"submitted"],
-    ["Overtime","2026-05-01","19:50","",4.0,"submitted"],
-    ["Overtime","2026-05-04","19:50","",4.0,"submitted"],
-    ["Overtime","2026-05-06","18:25","",2.6,"submitted"],
-    ["Bellevue Friday Overnight","2026-05-29","","",0,"submitted"],
-    ["Bellevue Weekend Backup Flat Pay","2026-05-30","","",0,"submitted"],
-  ];
 
   const state = {
     categories: [],
@@ -229,50 +103,6 @@
     state.categories = (cats || []).map(rowToCat);
     state.entries = (entries || []).map(rowToEntry);
     if (state.categories.length === 0) await dbSeedDefaults();
-    applyMigrations();
-  }
-
-  function applyMigrations() {
-    const dirty = [];
-    for (const c of state.categories) {
-      let changed = false;
-      if (FLEXIBLE_CATEGORIES.has(c.name) && !c.flexibleTimes) {
-        c.flexibleTimes = true;
-        changed = true;
-      }
-      if (c.name in CORRECT_START_TIMES && c.startTime !== CORRECT_START_TIMES[c.name]) {
-        c.startTime = CORRECT_START_TIMES[c.name];
-        changed = true;
-      }
-      if (changed) dirty.push(c);
-    }
-    for (const c of dirty) dbUpsertCategory(c);
-
-    // Recompute hours to 2-decimal precision from start/end times.
-    const dirtyEntries = [];
-    for (const e of state.entries) {
-      const cat = categoryById(e.categoryId);
-      if (!cat || cat.type !== "hourly") continue;
-      const effectiveStart = cat.flexibleTimes ? e.startTime : cat.startTime;
-      if (!effectiveStart || !e.endTime) continue;
-      const exact = calcHoursFromTimes(effectiveStart, e.endTime);
-      const rounded = Math.round(exact * 100) / 100;
-      if (rounded > 0 && rounded !== e.hours) {
-        e.hours = rounded;
-        dirtyEntries.push(e);
-      }
-    }
-    if (dirtyEntries.length > 0) dbBatchUpsertEntries(dirtyEntries);
-  }
-
-  async function dbBatchUpsertEntries(entries) {
-    const userId = state.user.id;
-    const rows = entries.map((e) => entryToRow(e, userId));
-    const BATCH = 25;
-    for (let i = 0; i < rows.length; i += BATCH) {
-      const { error } = await sb.from("entries").upsert(rows.slice(i, i + BATCH));
-      if (error) console.error("batch upsert entries:", error);
-    }
   }
 
   async function dbSeedDefaults() {
@@ -290,24 +120,36 @@
     const { error } = await sb
       .from("categories")
       .upsert(catToRow(cat, state.user.id));
-    if (error) console.error("upsert category:", error);
+    if (error) {
+      console.error("upsert category:", error);
+      showToast(`Couldn't save category: ${error.message}`);
+    }
   }
 
   async function dbDeleteCategory(id) {
     const { error } = await sb.from("categories").delete().eq("id", id);
-    if (error) console.error("delete category:", error);
+    if (error) {
+      console.error("delete category:", error);
+      showToast(`Couldn't delete category: ${error.message}`);
+    }
   }
 
   async function dbUpsertEntry(entry) {
     const { error } = await sb
       .from("entries")
       .upsert(entryToRow(entry, state.user.id));
-    if (error) console.error("upsert entry:", error);
+    if (error) {
+      console.error("upsert entry:", error);
+      showToast(`Couldn't save entry: ${error.message}`);
+    }
   }
 
   async function dbDeleteEntry(id) {
     const { error } = await sb.from("entries").delete().eq("id", id);
-    if (error) console.error("delete entry:", error);
+    if (error) {
+      console.error("delete entry:", error);
+      showToast(`Couldn't delete entry: ${error.message}`);
+    }
   }
 
   async function dbReset() {
@@ -318,9 +160,18 @@
   }
 
   async function dbImport(data) {
+    const { data: refreshData, error: refreshErr } = await sb.auth.refreshSession();
+    if (refreshErr || !refreshData?.session) {
+      throw new Error("Session expired — please sign out and sign in again, then retry.");
+    }
+    state.user = refreshData.session.user;
     const userId = state.user.id;
-    await sb.from("entries").delete().eq("user_id", userId);
-    await sb.from("categories").delete().eq("user_id", userId);
+
+    const { error: delEntriesErr } = await sb.from("entries").delete().eq("user_id", userId);
+    if (delEntriesErr) throw delEntriesErr;
+    const { error: delCatsErr } = await sb.from("categories").delete().eq("user_id", userId);
+    if (delCatsErr) throw delCatsErr;
+
     const catRows = data.categories.map((c) =>
       catToRow({ flexibleTimes: false, ...c }, userId)
     );
@@ -341,66 +192,6 @@
     } else {
       state.entries = [];
     }
-  }
-
-  async function dbSeedHistoricalData() {
-    // Refresh the session so we always have a valid token before a bulk insert
-    const { data: refreshData, error: refreshErr } = await sb.auth.refreshSession();
-    if (refreshErr || !refreshData?.session) {
-      throw new Error("Session expired — please sign out and sign in again, then retry.");
-    }
-    state.user = refreshData.session.user;
-    const userId = state.user.id;
-
-    const nameToId = Object.fromEntries(state.categories.map((c) => [c.name, c.id]));
-
-    // Create any categories that don't exist yet
-    const missingNames = [...new Set(SHEET_ENTRIES.map((r) => r[0]))].filter(
-      (n) => !nameToId[n]
-    );
-    if (missingNames.length > 0) {
-      const fallbackRates = { "Bellevue Weekend Backup Flat Pay": 500 };
-      const newCats = missingNames.map((name) => ({
-        id: uid(),
-        user_id: userId,
-        name,
-        type: "flat",
-        rate: fallbackRates[name] ?? 0,
-        start_time: "",
-        flexible_times: false,
-      }));
-      const { data: saved, error } = await sb.from("categories").insert(newCats).select();
-      if (error) throw error;
-      for (const r of saved) {
-        state.categories.push(rowToCat(r));
-        nameToId[r.name] = r.id;
-      }
-    }
-
-    const entryRows = SHEET_ENTRIES.map(([catName, date, endTime, startTime, hours, status]) => ({
-      id: uid(),
-      user_id: userId,
-      date,
-      category_id: nameToId[catName] || null,
-      hours: Number(hours) || 0,
-      start_time: startTime || "",
-      end_time: endTime || "",
-      status,
-      note: "",
-    }));
-
-    // Insert in batches of 25 to stay well within PostgREST limits
-    const BATCH = 25;
-    const allSaved = [];
-    for (let i = 0; i < entryRows.length; i += BATCH) {
-      const { data: saved, error } = await sb
-        .from("entries")
-        .insert(entryRows.slice(i, i + BATCH))
-        .select();
-      if (error) throw error;
-      allSaved.push(...(saved || []));
-    }
-    state.entries = [...state.entries, ...allSaved.map(rowToEntry)];
   }
 
   // ---- Auth ----------------------------------------------------------------
@@ -483,6 +274,22 @@
   }
 
   // ---- Helpers -------------------------------------------------------------
+  function showToast(message, kind = "error") {
+    let host = document.getElementById("toastHost");
+    if (!host) {
+      host = document.createElement("div");
+      host.id = "toastHost";
+      host.className = "toast-host";
+      document.body.appendChild(host);
+    }
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${kind}`;
+    toast.textContent = message;
+    host.appendChild(toast);
+    setTimeout(() => toast.classList.add("toast-leave"), 4500);
+    setTimeout(() => toast.remove(), 5000);
+  }
+
   const fmtMoney = (n) =>
     (n || 0).toLocaleString(undefined, { style: "currency", currency: "USD" });
   const fmtHours = (n) => (Number(n) || 0).toFixed(2);
@@ -656,29 +463,13 @@
 
     if (rows.length === 0) {
       const isEmpty = state.entries.length === 0;
-      body.innerHTML = `<tr><td colspan="8" class="empty">
-        ${isEmpty
-          ? `No entries yet.<br><br>
-             <button class="btn btn-primary" id="loadSheetBtn">Load historical data from Google Sheet</button>`
-          : "No entries match the current filters."}
-      </td></tr>`;
+      body.innerHTML = `<tr><td colspan="8" class="empty">${
+        isEmpty
+          ? "No entries yet. Log your first shift on the Log tab."
+          : "No entries match the current filters."
+      }</td></tr>`;
       $("footHours").textContent = fmtHours(0);
       $("footTotal").textContent = fmtMoney(0);
-      if (isEmpty) {
-        $("loadSheetBtn").addEventListener("click", async () => {
-          const btn = $("loadSheetBtn");
-          btn.disabled = true;
-          btn.textContent = "Importing…";
-          try {
-            await dbSeedHistoricalData();
-            renderAll();
-          } catch (err) {
-            alert("Import failed: " + err.message);
-            btn.disabled = false;
-            btn.textContent = "Load historical data from Google Sheet";
-          }
-        });
-      }
       updateSelectAll();
       updateBulkBar();
       return;
@@ -709,11 +500,11 @@
         <td>${formatDate(e.date)}</td>
         <td>
           ${cat ? escapeHtml(cat.name) : "<em>(deleted)</em>"}
-          ${cat ? `<span class="pill ${cat.type}">${cat.type}</span>` : ""}
+          ${cat ? `<span class="pill ${escapeAttr(cat.type)}">${escapeHtml(cat.type)}</span>` : ""}
         </td>
         <td class="num">${hoursLabel}</td>
         <td class="num">${fmtMoney(earned)}</td>
-        <td><span class="pill ${e.status}">${e.status}</span></td>
+        <td><span class="pill ${escapeAttr(e.status)}">${escapeHtml(e.status)}</span></td>
         <td>${escapeHtml(e.note || "")}</td>
         <td class="num">
           <button class="btn btn-icon" data-action="edit-entry" title="Edit entry">✎</button>
@@ -799,9 +590,11 @@
     document.querySelectorAll(".nav-item").forEach((btn) => {
       btn.addEventListener("click", () => {
         const target = btn.dataset.tab;
-        document.querySelectorAll(".nav-item").forEach((b) =>
-          b.classList.toggle("active", b === btn)
-        );
+        document.querySelectorAll(".nav-item").forEach((b) => {
+          const isActive = b === btn;
+          b.classList.toggle("active", isActive);
+          b.setAttribute("aria-selected", isActive ? "true" : "false");
+        });
         document.querySelectorAll(".tab-pane").forEach((p) =>
           p.classList.toggle("active", p.id === `tab-${target}`)
         );
@@ -811,19 +604,19 @@
 
   function renderSummary() {
     let total = 0,
-      pending = 0,
+      outstanding = 0,
       deposited = 0,
       hours = 0;
     for (const e of state.entries) {
       const earned = calcEarned(e);
       total += earned;
       if (e.status === "deposited") deposited += earned;
-      else pending += earned;
+      else outstanding += earned;
       const cat = categoryById(e.categoryId);
       if (cat && cat.type === "hourly") hours += Number(e.hours) || 0;
     }
     $("statTotal").textContent = fmtMoney(total);
-    $("statPending").textContent = fmtMoney(pending);
+    $("statPending").textContent = fmtMoney(outstanding);
     $("statDeposited").textContent = fmtMoney(deposited);
     $("statHours").textContent = fmtHours(hours);
     $("statShifts").textContent = String(state.entries.length);
@@ -930,7 +723,8 @@
     const startInput = $("entryStartTime");
     const endInput = $("entryEndTime");
     const hoursInput = $("entryHours");
-    const hint = $("startTimeHint");
+    const startHint = $("startTimeHint");
+    const endHint = $("endTimeHint");
     if (!cat) return;
     const timeGroup = document.getElementById("entryTimeGroup");
     if (cat.type === "flat") {
@@ -942,12 +736,14 @@
       endInput.value = "";
       hoursInput.value = "";
       hoursInput.required = false;
+      if (endHint) endHint.textContent = "";
     } else if (cat.flexibleTimes) {
       if (timeGroup) timeGroup.style.display = "";
       startField.style.display = "";
       endField.style.display = "";
       hoursField.style.display = "";
-      hint.textContent = "";
+      startHint.textContent = "";
+      if (endHint) endHint.textContent = "";
       hoursInput.required = true;
       recalcHoursFromEndTime();
     } else {
@@ -956,9 +752,12 @@
       startInput.value = "";
       endField.style.display = "";
       hoursField.style.display = "";
-      hint.textContent = cat.startTime
-        ? `(starts at ${formatTime(cat.startTime)})`
-        : "(no start time set on category)";
+      startHint.textContent = "";
+      if (endHint) {
+        endHint.textContent = cat.startTime
+          ? `(starts at ${formatTime(cat.startTime)})`
+          : "(no start time set on category)";
+      }
       hoursInput.required = true;
       recalcHoursFromEndTime();
     }
@@ -1010,8 +809,7 @@
     $("entryStartTime").value = "";
     $("entryEndTime").value = "";
     $("entryHours").value = "";
-    $("hoursAuto").textContent = "";
-    updatePreview();
+    recalcHoursFromEndTime();
   }
 
   function exitEditMode() {
@@ -1022,10 +820,16 @@
   }
 
   function populateFormForEdit(entry) {
+    const cat = categoryById(entry.categoryId);
+    if (!cat) {
+      showToast(
+        "This entry's category has been deleted. Re-create the category before editing, or delete the entry."
+      );
+      return;
+    }
     state.editingEntryId = entry.id;
     $("entryDate").value = entry.date || "";
-    const cat = categoryById(entry.categoryId);
-    if (cat) $("entryCategory").value = cat.id;
+    $("entryCategory").value = cat.id;
     syncHoursField();
     if (entry.startTime) $("entryStartTime").value = entry.startTime;
     if (entry.endTime) $("entryEndTime").value = entry.endTime;
@@ -1170,8 +974,10 @@
         populateFormForEdit(entry);
       } else if (action === "delete-entry") {
         state.entries = state.entries.filter((e) => e.id !== entry.id);
+        state.selectedEntries.delete(entry.id);
         renderEntries();
         renderSummary();
+        renderMetrics();
         await dbDeleteEntry(entry.id);
       } else if (action === "cycle-status") {
         const order = ["pending", "submitted", "deposited"];

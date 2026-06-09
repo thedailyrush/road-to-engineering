@@ -62,7 +62,7 @@
           <span class="value" id="statTotal">$0.00</span>
         </div>
         <div class="card stat">
-          <span class="label">Pending</span>
+          <span class="label">Outstanding</span>
           <span class="value" id="statPending">$0.00</span>
         </div>
         <div class="card stat">
@@ -103,7 +103,7 @@
                   <input type="time" id="entryStartTime" class="ef-input" />
                 </div>
                 <div class="ef-card" id="endTimeField">
-                  <label class="ef-label" for="entryEndTime">Left at</label>
+                  <label class="ef-label" for="entryEndTime">Left at <span class="ef-hint" id="endTimeHint"></span></label>
                   <input type="time" id="entryEndTime" class="ef-input" />
                 </div>
                 <div class="ef-card" id="hoursField">
@@ -134,7 +134,7 @@
             </div>
 
             <button type="submit" class="btn btn-primary ef-submit" id="entrySubmitBtn">Add Entry</button>
-            <button type="button" class="btn btn-ghost ef-cancel-edit" id="entryCancelEdit" style="display:none">Cancel edit</button>
+            <button type="button" class="btn btn-ghost" id="entryCancelEdit" style="display:none">Cancel edit</button>
           </form>
         </section>
       </div>
@@ -256,7 +256,7 @@
 
     <!-- Floating bottom nav -->
     <nav class="bottom-nav" id="bottomNav" role="tablist">
-      <button class="nav-item active" type="button" role="tab" data-tab="home">
+      <button class="nav-item active" type="button" role="tab" aria-selected="true" data-tab="home">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="9"/>
           <line x1="12" y1="8" x2="12" y2="16"/>
@@ -264,7 +264,7 @@
         </svg>
         <span>Log</span>
       </button>
-      <button class="nav-item" type="button" role="tab" data-tab="log">
+      <button class="nav-item" type="button" role="tab" aria-selected="false" data-tab="log">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="8" y1="6" x2="21" y2="6"/>
           <line x1="8" y1="12" x2="21" y2="12"/>
@@ -275,7 +275,7 @@
         </svg>
         <span>Shifts</span>
       </button>
-      <button class="nav-item" type="button" role="tab" data-tab="metrics">
+      <button class="nav-item" type="button" role="tab" aria-selected="false" data-tab="metrics">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="18" y1="20" x2="18" y2="10"/>
           <line x1="12" y1="20" x2="12" y2="4"/>
@@ -284,7 +284,7 @@
         </svg>
         <span>Metrics</span>
       </button>
-      <button class="nav-item" type="button" role="tab" data-tab="categories">
+      <button class="nav-item" type="button" role="tab" aria-selected="false" data-tab="categories">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
           <circle cx="7" cy="7" r="1" fill="currentColor" stroke="none"/>
