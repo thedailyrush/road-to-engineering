@@ -394,24 +394,23 @@
       tr.className = "row-edit";
       tr.dataset.id = cat.id;
       tr.innerHTML = `
-        <td><input type="text" data-field="name" value="${escapeAttr(cat.name)}" /></td>
+        <td class="cat-name"><input type="text" data-field="name" value="${escapeAttr(cat.name)}" /></td>
         <td>
-          <div class="toggle" data-type="${cat.type}" role="switch" aria-checked="${cat.type === "flat"}" tabindex="0" title="Toggle hourly / flat">
-            <span class="label-on">Hr</span>
-            <span class="label-off">Flat</span>
-            <span class="knob">${cat.type === "flat" ? "Flat" : "Hr"}</span>
-          </div>
+          <span class="seg seg-sm" role="radiogroup" aria-label="Category type">
+            <label class="seg-opt"><input type="radio" name="ctype-${cat.id}" value="hourly" data-field="type"${cat.type === "hourly" ? " checked" : ""} />Hr</label>
+            <label class="seg-opt"><input type="radio" name="ctype-${cat.id}" value="flat" data-field="type"${cat.type === "flat" ? " checked" : ""} />Flat</label>
+          </span>
         </td>
         <td class="num">
           <input type="number" data-field="rate" min="0" step="0.01" value="${cat.rate}" />
         </td>
-        <td class="num">
+        <td>
           ${cat.type === "flat"
-            ? '<span class="muted">—</span>'
+            ? '<span class="start-muted">—</span>'
             : `<input type="time" data-field="startTime" value="${escapeAttr(cat.startTime || "")}" />`}
         </td>
         <td class="num">
-          <button class="btn btn-icon del" data-action="delete-cat" title="Delete category">Delete</button>
+          <button class="btn btn-ghost btn-del" data-action="delete-cat" title="Delete category">Delete</button>
         </td>
       `;
       body.appendChild(tr);
@@ -463,15 +462,16 @@
 
     if (rows.length === 0) {
       const isEmpty = state.entries.length === 0;
-      body.innerHTML = `<tr><td colspan="8" class="empty">${
+      body.innerHTML = `<div class="empty">${
         isEmpty
           ? "No entries yet. Log your first shift on the Log tab."
           : "No entries match the current filters."
-      }</td></tr>`;
+      }</div>`;
       $("footHours").textContent = fmtHours(0);
       $("footTotal").textContent = fmtMoney(0);
       updateSelectAll();
       updateBulkBar();
+      renderRecent();
       return;
     }
 
@@ -484,40 +484,78 @@
       totalHours += hours;
       totalEarned += earned;
 
-      const tr = document.createElement("tr");
-      tr.dataset.id = e.id;
+      const isFlat = cat && cat.type === "flat";
       const effectiveStart =
         cat && cat.flexibleTimes ? e.startTime : (cat && cat.startTime);
-      const hoursLabel =
-        cat && cat.type === "hourly"
-          ? effectiveStart && e.endTime
-            ? `${fmtHours(hours)} <span class="muted small">(${formatTime(effectiveStart)}–${formatTime(e.endTime)})</span>`
-            : fmtHours(hours)
-          : "—";
+      const hoursLabel = !cat
+        ? ""
+        : isFlat
+          ? "flat rate"
+          : effectiveStart && e.endTime
+            ? `<strong>${fmtHours(hours)}</strong> (${formatTime(effectiveStart)}–${formatTime(e.endTime)})`
+            : `<strong>${fmtHours(hours)}</strong> hrs`;
       const checked = state.selectedEntries.has(e.id) ? " checked" : "";
-      tr.innerHTML = `
-        <td class="check"><input type="checkbox" class="entry-select"${checked} /></td>
-        <td>${formatDate(e.date)}</td>
-        <td>
-          ${cat ? escapeHtml(cat.name) : "<em>(deleted)</em>"}
-          ${cat ? `<span class="pill ${escapeAttr(cat.type)}">${escapeHtml(cat.type)}</span>` : ""}
-        </td>
-        <td class="num">${hoursLabel}</td>
-        <td class="num">${fmtMoney(earned)}</td>
-        <td><span class="pill ${escapeAttr(e.status)}">${escapeHtml(e.status)}</span></td>
-        <td>${escapeHtml(e.note || "")}</td>
-        <td class="num">
-          <button class="btn btn-icon" data-action="edit-entry" title="Edit entry">✎</button>
-          <button class="btn btn-icon" data-action="cycle-status" title="Cycle status">↻</button>
-          <button class="btn btn-icon del" data-action="delete-entry" title="Delete entry">✕</button>
-        </td>
+
+      const row = document.createElement("div");
+      row.className = "shift-row";
+      row.dataset.id = e.id;
+      row.innerHTML = `
+        <input type="checkbox" class="entry-select"${checked} aria-label="Select entry" />
+        <div class="shift-main">
+          <div class="shift-line">
+            <span class="shift-cat">${cat ? escapeHtml(cat.name) : "<em>(deleted)</em>"}</span>
+            ${cat ? `<span class="tag ${isFlat ? "tag-accent" : "tag-accent-2"}">${isFlat ? "flat" : "hourly"}</span>` : ""}
+            <span class="tag ${e.status === "deposited" ? "tag-accent-2" : "tag-accent"}">${escapeHtml(e.status)}</span>
+          </div>
+          <div class="shift-date">${formatDate(e.date)}</div>
+        </div>
+        <div class="shift-right">
+          <span class="shift-earned">${fmtMoney(earned)}</span>
+          <span class="shift-sub">${hoursLabel}</span>
+        </div>
+        <div class="shift-actions">
+          <button class="btn btn-ghost btn-icon" data-action="edit-entry" title="Edit entry">✎</button>
+          <button class="btn btn-ghost btn-icon" data-action="cycle-status" title="Cycle status">↻</button>
+          <button class="btn btn-ghost btn-icon btn-del" data-action="delete-entry" title="Delete entry">✕</button>
+        </div>
+        ${e.note ? `<div class="shift-note">${escapeHtml(e.note)}</div>` : ""}
       `;
-      body.appendChild(tr);
+      body.appendChild(row);
     }
     $("footHours").textContent = fmtHours(totalHours);
     $("footTotal").textContent = fmtMoney(totalEarned);
     updateSelectAll();
     updateBulkBar();
+    renderRecent();
+  }
+
+  function renderRecent() {
+    const host = $("recentShifts");
+    if (!host) return;
+    const rows = [...state.entries]
+      .sort((a, b) => (a.date < b.date ? 1 : -1))
+      .slice(0, 5);
+    if (rows.length === 0) {
+      host.innerHTML = `<div class="empty">Nothing logged yet.</div>`;
+      return;
+    }
+    host.innerHTML = rows
+      .map((e) => {
+        const cat = categoryById(e.categoryId);
+        const isFlat = cat && cat.type === "flat";
+        const sub = !cat ? "" : isFlat ? "flat rate" : `${fmtHours(e.hours)} hrs`;
+        return `<div class="card elev-sm recent-row">
+          <div class="recent-main">
+            <div class="shift-line">
+              <span class="shift-cat">${cat ? escapeHtml(cat.name) : "<em>(deleted)</em>"}</span>
+              ${cat ? `<span class="tag ${isFlat ? "tag-accent" : "tag-accent-2"}">${isFlat ? "flat" : "hourly"}</span>` : ""}
+            </div>
+            <div class="shift-date">${formatDate(e.date)}${sub ? " · " + sub : ""}</div>
+          </div>
+          <span class="recent-earned">${fmtMoney(calcEarned(e))}</span>
+        </div>`;
+      })
+      .join("");
   }
 
   function updateSelectAll() {
@@ -692,7 +730,7 @@
       return `<div class="metrics-cat-row">
         <div class="metrics-cat-top">
           <span class="metrics-cat-name">${escapeHtml(c.name)}</span>
-          <span class="pill ${c.type}">${c.type}</span>
+          <span class="tag ${c.type === "flat" ? "tag-accent" : "tag-accent-2"}">${escapeHtml(c.type)}</span>
           <span class="metrics-cat-amount">${fmtMoney(c.income)}</span>
           <span class="metrics-cat-pct">${pct}%</span>
         </div>
@@ -917,16 +955,6 @@
       const id = row.dataset.id;
       const cat = categoryById(id);
       if (!cat) return;
-      const toggle = ev.target.closest(".toggle");
-      if (toggle) {
-        cat.type = cat.type === "hourly" ? "flat" : "hourly";
-        renderCategories();
-        renderCategoryDropdowns();
-        renderEntries();
-        renderSummary();
-        await dbUpsertCategory(cat);
-        return;
-      }
       const btn = ev.target.closest("[data-action]");
       if (btn && btn.dataset.action === "delete-cat") {
         const used = state.entries.some((e) => e.categoryId === id);
@@ -940,14 +968,6 @@
       }
     });
 
-    $("categoriesBody").addEventListener("keydown", (ev) => {
-      const toggle = ev.target.closest(".toggle");
-      if (toggle && (ev.key === "Enter" || ev.key === " ")) {
-        ev.preventDefault();
-        toggle.click();
-      }
-    });
-
     $("categoriesBody").addEventListener("change", async (ev) => {
       const row = ev.target.closest("tr[data-id]");
       if (!row) return;
@@ -955,17 +975,20 @@
       if (!cat) return;
       const field = ev.target.dataset.field;
       if (!field) return;
-      if (field === "rate") cat[field] = Number(ev.target.value) || 0;
+      if (field === "rate") cat.rate = Number(ev.target.value) || 0;
+      else if (field === "type") cat.type = ev.target.value;
       else cat[field] = ev.target.value;
+      if (field === "type") renderCategories();
       renderCategoryDropdowns();
       renderEntries();
       renderSummary();
+      renderMetrics();
       await dbUpsertCategory(cat);
     });
 
     // Entries
     $("entriesBody").addEventListener("click", async (ev) => {
-      const row = ev.target.closest("tr[data-id]");
+      const row = ev.target.closest(".shift-row[data-id]");
       if (!row) return;
       const entry = state.entries.find((e) => e.id === row.dataset.id);
       if (!entry) return;
@@ -992,7 +1015,7 @@
     $("entriesBody").addEventListener("change", (ev) => {
       const cb = ev.target.closest(".entry-select");
       if (!cb) return;
-      const row = cb.closest("tr[data-id]");
+      const row = cb.closest(".shift-row[data-id]");
       if (!row) return;
       const id = row.dataset.id;
       if (cb.checked) state.selectedEntries.add(id);
@@ -1125,6 +1148,33 @@
     });
   }
 
+  // ---- Theme ---------------------------------------------------------------
+  function wireTheme() {
+    const applyIcon = () => {
+      const dark = document.documentElement.classList.contains("ci-dark");
+      const moon = $("themeIconMoon");
+      const sun = $("themeIconSun");
+      if (moon) moon.hidden = dark;
+      if (sun) sun.hidden = !dark;
+    };
+    let saved = null;
+    try {
+      saved = localStorage.getItem("ci-theme");
+    } catch (e) {}
+    if (saved === "dark") document.documentElement.classList.add("ci-dark");
+    applyIcon();
+    const btn = $("themeToggle");
+    if (btn) {
+      btn.addEventListener("click", () => {
+        const dark = document.documentElement.classList.toggle("ci-dark");
+        try {
+          localStorage.setItem("ci-theme", dark ? "dark" : "light");
+        } catch (e) {}
+        applyIcon();
+      });
+    }
+  }
+
   function syncCatTypeUI() {
     const isFlat =
       document.querySelector('input[name="catType"]:checked').value === "flat";
@@ -1150,6 +1200,7 @@
 
   // ---- Init ----------------------------------------------------------------
   async function init() {
+    wireTheme();
     wireAuth();
     wire();
     wireTabs();
