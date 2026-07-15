@@ -314,7 +314,7 @@ html.ci-dark .tag-neutral  { background: color-mix(in srgb, var(--color-text) 10
   color: color-mix(in srgb, var(--color-text) 55%, transparent);
 }
 .shift-right {
-  flex: 0 1 auto; min-width: 120px;
+  flex: 0 1 auto; min-width: 120px; margin-left: auto;
   display: flex; flex-direction: column; gap: 2px; text-align: right;
 }
 .shift-earned {
@@ -542,11 +542,103 @@ html.ci-dark .tag-neutral  { background: color-mix(in srgb, var(--color-text) 10
 }
 .toast-leave { opacity: 0; transform: translateX(20px); }
 
-/* ---- Small screens ---- */
+/* ════════════════════════════════════════════════════════════════════════
+   PHONE BREAKPOINTS
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ---- ≤ 640px: phones ---- */
+@media (max-width: 640px) {
+  body { padding-bottom: 112px; }
+
+  /* header: tighter chrome, smaller buttons */
+  .topbar { padding: 14px clamp(14px, 4vw, 40px) 4px; gap: 8px 10px; }
+  .brand-mark { width: 38px; height: 38px; border-radius: 12px; font-size: 15px; }
+  .brand-text h1 { font-size: 20px; }
+  .actions { gap: 6px; }
+  .actions .btn { font-size: 13px; padding: 7px 12px; }
+  .btn-icon { width: 34px; height: 34px; }
+  .user-chip { max-width: 130px; padding: 6px 12px; font-size: 12px; }
+
+  /* stats: 2-up, tighter */
+  .summary { gap: 10px; margin-bottom: 22px; }
+  .stat { padding: 14px 16px; gap: 6px; }
+
+  .page { padding-top: 14px; }
+  .panel { gap: 16px; }
+  .panel h2 { font-size: 22px; }
+  .log-body { gap: 22px; }
+  .entry-form { gap: 16px; }
+  .form-row { gap: 12px; }
+  .payout-strip { padding: 14px 18px; }
+  .payout-strip strong { font-size: 21px; }
+
+  /* shift rows: tighter padding, actions stay tappable */
+  .shift-row { padding: 12px 14px; gap: 10px 12px; }
+  .shift-actions .btn-icon { width: 34px; height: 34px; }
+  .shift-totals { gap: 12px; flex-wrap: wrap; }
+
+  /* categories: table becomes stacked cards — no horizontal scroll */
+  #categoriesPanel .table-wrap { overflow-x: visible; margin: 0; padding: 0; }
+  #categoriesTable { display: block; min-width: 0; }
+  #categoriesTable thead { display: none; }
+  #categoriesTable tbody { display: flex; flex-direction: column; gap: 10px; }
+
+  #categoriesTable tr:not(.row-edit) { display: block; }
+  #categoriesTable tr:not(.row-edit) td { display: block; border: none; }
+
+  #categoriesTable tr.row-edit {
+    display: grid;
+    grid-template-areas:
+      "name  name  del"
+      "type  rate  time";
+    grid-template-columns: auto 1fr 96px;
+    gap: 8px 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--color-divider);
+    border-radius: 18px;
+    background: color-mix(in srgb, var(--color-text) 4%, transparent);
+  }
+  #categoriesTable tr.row-edit:hover { background: color-mix(in srgb, var(--color-text) 4%, transparent); }
+  #categoriesTable tr.row-edit td {
+    display: flex; align-items: center;
+    border: none; padding: 0; min-width: 0;
+  }
+  #categoriesTable tr.row-edit td:nth-child(1) { grid-area: name; }
+  #categoriesTable tr.row-edit td:nth-child(2) { grid-area: type; }
+  #categoriesTable tr.row-edit td:nth-child(3) { grid-area: rate; }
+  #categoriesTable tr.row-edit td:nth-child(4) { grid-area: time; }
+  #categoriesTable tr.row-edit td:nth-child(5) { grid-area: del; justify-content: flex-end; }
+  .row-edit input { min-width: 0; }
+  .row-edit .cat-name input { min-width: 0; }
+}
+
+/* ---- ≤ 480px: small phones ---- */
 @media (max-width: 480px) {
-  .metrics-row { grid-template-columns: 64px 1fr; gap: 12px; }
-  .metrics-bar-val { min-width: 60px; font-size: 13px; }
+  /* metrics: month label stacks above its bars for full-width tracks */
+  .metrics-row { grid-template-columns: 1fr; gap: 8px; }
+  .metrics-month { font-size: 14px; }
+  .metrics-monthly { gap: 18px; }
   .metrics-bar-lbl { width: 44px; }
-  .user-chip { max-width: 140px; }
+  .metrics-bar-val { min-width: 60px; font-size: 13px; }
+  .metrics-cat-pct { width: 36px; }
+
+  .user-chip { max-width: 110px; }
   .toast-host { left: 16px; right: 16px; max-width: none; }
+
+  /* shift-log filters: share rows evenly instead of ragged wrap */
+  .panel-head .input.search { flex: 1 1 100%; min-width: 0; }
+  .panel-head .input.compact { flex: 1 1 40%; min-width: 0; }
+}
+
+/* ---- ≤ 380px: compact phones ---- */
+@media (max-width: 380px) {
+  .actions .btn { font-size: 12px; padding: 6px 10px; }
+  .stat .value { font-size: 19px; }
+  #categoriesTable tr.row-edit {
+    grid-template-areas:
+      "name name"
+      "type del"
+      "rate time";
+    grid-template-columns: 1fr auto;
+  }
 }
