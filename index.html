@@ -9,30 +9,26 @@
 <body>
   <!-- Auth overlay -->
   <div id="authOverlay" class="auth-overlay" style="display:none">
-    <div class="card auth-card">
+    <div class="card elev-lg auth-card">
       <div class="auth-logo">
-        <div class="logo">CI</div>
+        <div class="brand-mark brand-mark-lg">CI</div>
         <h1>CI Tracker</h1>
-        <p class="muted small" id="authSubtitle">Sign in to access your data</p>
+        <p class="text-muted auth-sub" id="authSubtitle">Sign in to access your data</p>
       </div>
-      <form id="authForm" class="form">
-        <div class="field full">
+      <form id="authForm" class="auth-form">
+        <div class="field">
           <label for="authEmail">Email</label>
-          <input type="email" id="authEmail" autocomplete="email" required />
+          <input class="input" type="email" id="authEmail" autocomplete="email" required />
         </div>
-        <div class="field full">
+        <div class="field">
           <label for="authPassword">Password</label>
-          <input type="password" id="authPassword" autocomplete="current-password" required minlength="6" />
+          <input class="input" type="password" id="authPassword" autocomplete="current-password" required minlength="6" />
         </div>
-        <div class="field full" id="authError" style="display:none">
+        <div class="auth-error" id="authError" style="display:none">
           <span class="error-text"></span>
         </div>
-        <div class="field full">
-          <button type="submit" class="btn btn-primary block" id="authSubmitBtn">Sign In</button>
-        </div>
-        <div class="field full auth-toggle-row">
-          <button type="button" class="btn btn-ghost" id="authToggleBtn">Don't have an account? Sign up</button>
-        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-tall" id="authSubmitBtn">Sign In</button>
+        <button type="button" class="btn btn-ghost auth-toggle" id="authToggleBtn">Don't have an account? Sign up</button>
       </form>
     </div>
   </div>
@@ -40,182 +36,193 @@
   <!-- Main app shell -->
   <div id="appShell" style="display:none">
     <header class="topbar">
-      <div class="brand">
-        <div class="logo">CI</div>
+      <div class="brand-mark elev-sm">CI</div>
+      <div class="brand-text">
         <h1>CI Tracker</h1>
+        <p class="subtitle">Contract income &amp; shift log</p>
       </div>
       <div class="actions">
-        <span class="user-chip muted small" id="userChip"></span>
-        <button id="exportBtn" class="btn btn-ghost" title="Download data as JSON">Export</button>
-        <button id="importBtn" class="btn btn-ghost" title="Load data from JSON">Import</button>
+        <button id="themeToggle" class="btn btn-secondary btn-icon" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg id="themeIconMoon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          <svg id="themeIconSun" hidden width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        </button>
+        <span class="user-chip" id="userChip"></span>
+        <button id="exportBtn" class="btn btn-secondary" title="Download data as JSON">Export</button>
+        <button id="importBtn" class="btn btn-secondary" title="Load data from JSON">Import</button>
         <input type="file" id="importFile" accept="application/json" hidden />
-        <button id="resetBtn" class="btn btn-danger-ghost" title="Reset all data">Reset</button>
-        <button id="signOutBtn" class="btn btn-ghost" title="Sign out">Sign out</button>
+        <button id="resetBtn" class="btn btn-secondary btn-danger" title="Reset all data">Reset</button>
+        <button id="signOutBtn" class="btn btn-secondary" title="Sign out">Sign out</button>
       </div>
     </header>
 
-    <!-- Page 1: Log a Shift + Summary -->
+    <!-- Page 1: Log -->
     <div id="tab-home" class="tab-pane active">
-      <section class="summary">
-        <div class="card stat">
-          <span class="label">Total Earned</span>
-          <span class="value" id="statTotal">$0.00</span>
-        </div>
-        <div class="card stat">
-          <span class="label">Outstanding</span>
-          <span class="value" id="statPending">$0.00</span>
-        </div>
-        <div class="card stat">
-          <span class="label">Deposited</span>
-          <span class="value" id="statDeposited">$0.00</span>
-        </div>
-        <div class="card stat">
-          <span class="label">Overtime Hours</span>
-          <span class="value" id="statHours">0.0</span>
-        </div>
-        <div class="card stat">
-          <span class="label">Shifts Logged</span>
-          <span class="value" id="statShifts">0</span>
-        </div>
-      </section>
-
-      <div class="page-pad center-form">
-        <section class="card panel" id="entryPanel">
-          <div class="panel-header">
-            <h2>Log a Shift</h2>
+      <main class="page">
+        <section class="summary">
+          <div class="card elev-sm stat">
+            <span class="label">Total Earned</span>
+            <span class="value" id="statTotal">$0.00</span>
           </div>
-          <form id="entryForm" class="entry-form">
-            <div class="ef-grid">
-
-              <div class="ef-card">
-                <label class="ef-label" for="entryDate">Date</label>
-                <input type="date" id="entryDate" class="ef-input" required />
-              </div>
-
-              <div class="ef-card">
-                <label class="ef-label" for="entryCategory">Category</label>
-                <select id="entryCategory" class="ef-input" required></select>
-              </div>
-
-              <div class="ef-time-group" id="entryTimeGroup">
-                <div class="ef-card" id="startTimeField" style="display:none">
-                  <label class="ef-label" for="entryStartTime">Start <span class="ef-hint" id="startTimeHint"></span></label>
-                  <input type="time" id="entryStartTime" class="ef-input" />
-                </div>
-                <div class="ef-card" id="endTimeField">
-                  <label class="ef-label" for="entryEndTime">Left at <span class="ef-hint" id="endTimeHint"></span></label>
-                  <input type="time" id="entryEndTime" class="ef-input" />
-                </div>
-                <div class="ef-card" id="hoursField">
-                  <label class="ef-label" for="entryHours">Hours <span class="ef-hint" id="hoursAuto"></span></label>
-                  <input type="number" id="entryHours" class="ef-input" step="any" min="0" placeholder="4.5" />
-                </div>
-              </div>
-
-              <div class="ef-card">
-                <label class="ef-label" for="entryStatus">Status</label>
-                <select id="entryStatus" class="ef-input">
-                  <option value="pending">Pending</option>
-                  <option value="submitted">Submitted</option>
-                  <option value="deposited">Deposited</option>
-                </select>
-              </div>
-
-              <div class="ef-card">
-                <label class="ef-label" for="entryNote">Note</label>
-                <input type="text" id="entryNote" class="ef-input" placeholder="Optional" />
-              </div>
-
-            </div>
-
-            <div class="ef-payout">
-              <span class="muted small">Estimated payout</span>
-              <strong class="ef-amount" id="entryPreview">$0.00</strong>
-            </div>
-
-            <button type="submit" class="btn btn-primary ef-submit" id="entrySubmitBtn">Add Entry</button>
-            <button type="button" class="btn btn-ghost" id="entryCancelEdit" style="display:none">Cancel edit</button>
-          </form>
+          <div class="card elev-sm stat">
+            <span class="label">Outstanding</span>
+            <span class="value accent" id="statPending">$0.00</span>
+          </div>
+          <div class="card elev-sm stat">
+            <span class="label">Deposited</span>
+            <span class="value sage" id="statDeposited">$0.00</span>
+          </div>
+          <div class="card elev-sm stat">
+            <span class="label">Overtime Hours</span>
+            <span class="value" id="statHours">0.00</span>
+          </div>
+          <div class="card elev-sm stat">
+            <span class="label">Shifts Logged</span>
+            <span class="value" id="statShifts">0</span>
+          </div>
         </section>
-      </div>
+
+        <div class="log-body">
+          <section class="card elev-md panel form-card" id="entryPanel">
+            <div>
+              <h2>Log a Shift</h2>
+              <p class="panel-sub">Enter start &amp; end times, or hours manually.</p>
+            </div>
+            <form id="entryForm" class="entry-form">
+              <div class="form-row">
+                <div class="field">
+                  <label for="entryDate">Date</label>
+                  <input class="input" type="date" id="entryDate" required />
+                </div>
+                <div class="field">
+                  <label for="entryCategory">Category</label>
+                  <select class="input" id="entryCategory" required></select>
+                </div>
+              </div>
+
+              <div class="form-row form-row-times" id="entryTimeGroup">
+                <div class="field" id="startTimeField" style="display:none">
+                  <label for="entryStartTime">Start <span class="hint" id="startTimeHint"></span></label>
+                  <input class="input" type="time" id="entryStartTime" />
+                </div>
+                <div class="field" id="endTimeField">
+                  <label for="entryEndTime">Left at <span class="hint" id="endTimeHint"></span></label>
+                  <input class="input" type="time" id="entryEndTime" />
+                </div>
+                <div class="field" id="hoursField">
+                  <label for="entryHours">Hours <span class="hint" id="hoursAuto"></span></label>
+                  <input class="input" type="number" id="entryHours" step="any" min="0" placeholder="4.5" />
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="field">
+                  <label for="entryStatus">Status</label>
+                  <select class="input" id="entryStatus">
+                    <option value="pending">Pending</option>
+                    <option value="submitted">Submitted</option>
+                    <option value="deposited">Deposited</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="entryNote">Note</label>
+                  <input class="input" type="text" id="entryNote" placeholder="Optional" />
+                </div>
+              </div>
+
+              <div class="payout-strip">
+                <span>Estimated payout</span>
+                <strong id="entryPreview">$0.00</strong>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-block btn-tall" id="entrySubmitBtn">Add Entry</button>
+              <button type="button" class="btn btn-secondary btn-block" id="entryCancelEdit" style="display:none">Cancel edit</button>
+            </form>
+          </section>
+
+          <aside class="recent-rail">
+            <h3>Recent shifts</h3>
+            <div id="recentShifts" class="recent-list"></div>
+          </aside>
+        </div>
+      </main>
     </div>
 
-    <!-- Page 2: Shift Log -->
+    <!-- Page 2: Shifts -->
     <div id="tab-log" class="tab-pane">
-      <div class="page-pad">
-        <section class="card panel" id="entriesPanel">
-          <div class="panel-header">
+      <main class="page">
+        <section class="card elev-md panel" id="entriesPanel">
+          <div class="panel-head">
             <h2>Shift Log</h2>
-            <div class="filters">
-              <input type="search" id="searchInput" placeholder="Search notes / category..." />
-              <select id="filterMonth">
-                <option value="">All months</option>
-              </select>
-              <select id="filterCategory">
-                <option value="">All categories</option>
-              </select>
-              <select id="filterStatus">
-                <option value="">All statuses</option>
-                <option value="pending">Pending</option>
-                <option value="submitted">Submitted</option>
-                <option value="deposited">Deposited</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="bulk-bar" id="bulkBar" hidden>
-            <span class="bulk-count"><strong id="bulkCount">0</strong> selected</span>
-            <select id="bulkStatus">
+            <input class="input search" type="search" id="searchInput" placeholder="Search notes / category…" />
+            <select class="input compact" id="filterMonth">
+              <option value="">All months</option>
+            </select>
+            <select class="input compact" id="filterCategory">
+              <option value="">All categories</option>
+            </select>
+            <select class="input compact" id="filterStatus">
+              <option value="">All statuses</option>
               <option value="pending">Pending</option>
               <option value="submitted">Submitted</option>
               <option value="deposited">Deposited</option>
             </select>
-            <button type="button" class="btn btn-primary btn-sm" id="bulkApply">Apply status</button>
-            <button type="button" class="btn btn-ghost btn-sm" id="bulkClear">Clear</button>
           </div>
 
-          <div class="table-wrap">
-            <table class="table" id="entriesTable">
-              <thead>
-                <tr>
-                  <th class="check"><input type="checkbox" id="selectAllEntries" title="Select all visible" /></th>
-                  <th>Date</th>
-                  <th>Category</th>
-                  <th class="num">Hours</th>
-                  <th class="num">Earned</th>
-                  <th>Status</th>
-                  <th>Note</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody id="entriesBody"></tbody>
-              <tfoot>
-                <tr>
-                  <td></td>
-                  <td colspan="2" class="right strong">Totals</td>
-                  <td class="num strong" id="footHours">0.0</td>
-                  <td class="num strong" id="footTotal">$0.00</td>
-                  <td colspan="3"></td>
-                </tr>
-              </tfoot>
-            </table>
+          <label class="select-all">
+            <input type="checkbox" id="selectAllEntries" /> Select all visible
+          </label>
+
+          <div class="bulk-bar" id="bulkBar" hidden>
+            <span class="bulk-count"><strong id="bulkCount">0</strong> selected</span>
+            <select class="input compact" id="bulkStatus">
+              <option value="pending">Pending</option>
+              <option value="submitted">Submitted</option>
+              <option value="deposited">Deposited</option>
+            </select>
+            <button type="button" class="btn btn-primary" id="bulkApply">Apply status</button>
+            <button type="button" class="btn btn-secondary" id="bulkClear">Clear</button>
+          </div>
+
+          <div id="entriesBody" class="shift-list"></div>
+
+          <div class="shift-totals">
+            <span class="text-muted">Totals</span>
+            <span class="totals-hours"><strong id="footHours">0.00</strong> hrs</span>
+            <span class="totals-amount" id="footTotal">$0.00</span>
           </div>
         </section>
-      </div>
+      </main>
     </div>
 
-    <!-- Page 3: Categories -->
+    <!-- Page 3: Metrics -->
+    <div id="tab-metrics" class="tab-pane">
+      <main class="page metrics-page">
+        <section class="card elev-md panel">
+          <div class="panel-head">
+            <h2>Monthly Overview</h2>
+            <select id="metricsYear" class="input compact year-select"></select>
+          </div>
+          <div id="metricsMonthly" class="metrics-monthly"></div>
+        </section>
+
+        <section class="card elev-md panel">
+          <h2>Category Breakdown</h2>
+          <div id="metricsCategories" class="metrics-cats"></div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Page 4: Categories -->
     <div id="tab-categories" class="tab-pane">
-      <div class="page-pad">
-        <section class="card panel" id="categoriesPanel">
-          <div class="panel-header">
-            <h2>Categories</h2>
+      <main class="page">
+        <section class="card elev-md panel" id="categoriesPanel">
+          <div class="panel-head start">
+            <div class="grow">
+              <h2>Categories</h2>
+              <p class="panel-sub">Each category is <strong>Hourly</strong> (rate &times; hours) or <strong>Flat</strong> (per shift). Toggle a row to switch.</p>
+            </div>
             <button id="addCategoryBtn" class="btn btn-primary">+ Add Category</button>
           </div>
-          <p class="muted small">
-            Each category can be <strong>Hourly</strong> (rate &times; hours) or <strong>Flat</strong> (per shift).
-            Click the toggle on a row to switch.
-          </p>
           <div class="table-wrap">
             <table class="table" id="categoriesTable">
               <thead>
@@ -223,7 +230,7 @@
                   <th>Name</th>
                   <th>Type</th>
                   <th class="num">Rate / Flat</th>
-                  <th class="num">Start Time</th>
+                  <th>Start time</th>
                   <th></th>
                 </tr>
               </thead>
@@ -231,95 +238,42 @@
             </table>
           </div>
         </section>
-      </div>
-    </div>
-
-    <!-- Page 4: Metrics -->
-    <div id="tab-metrics" class="tab-pane">
-      <div class="page-pad metrics-pad">
-
-        <section class="card panel">
-          <div class="panel-header">
-            <h2>Monthly Overview</h2>
-            <select id="metricsYear" class="metrics-year-sel"></select>
-          </div>
-          <div id="metricsMonthly"></div>
-        </section>
-
-        <section class="card panel">
-          <div class="panel-header"><h2>Category Breakdown</h2></div>
-          <div id="metricsCategories"></div>
-        </section>
-
-      </div>
+      </main>
     </div>
 
     <!-- Floating bottom nav -->
     <nav class="bottom-nav" id="bottomNav" role="tablist">
-      <button class="nav-item active" type="button" role="tab" aria-selected="true" data-tab="home">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="9"/>
-          <line x1="12" y1="8" x2="12" y2="16"/>
-          <line x1="8" y1="12" x2="16" y2="12"/>
-        </svg>
-        <span>Log</span>
-      </button>
-      <button class="nav-item" type="button" role="tab" aria-selected="false" data-tab="log">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="8" y1="6" x2="21" y2="6"/>
-          <line x1="8" y1="12" x2="21" y2="12"/>
-          <line x1="8" y1="18" x2="21" y2="18"/>
-          <circle cx="3.5" cy="6" r="0.5" fill="currentColor"/>
-          <circle cx="3.5" cy="12" r="0.5" fill="currentColor"/>
-          <circle cx="3.5" cy="18" r="0.5" fill="currentColor"/>
-        </svg>
-        <span>Shifts</span>
-      </button>
-      <button class="nav-item" type="button" role="tab" aria-selected="false" data-tab="metrics">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="20" x2="18" y2="10"/>
-          <line x1="12" y1="20" x2="12" y2="4"/>
-          <line x1="6" y1="20" x2="6" y2="14"/>
-          <line x1="2" y1="20" x2="22" y2="20"/>
-        </svg>
-        <span>Metrics</span>
-      </button>
-      <button class="nav-item" type="button" role="tab" aria-selected="false" data-tab="categories">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-          <circle cx="7" cy="7" r="1" fill="currentColor" stroke="none"/>
-        </svg>
-        <span>Categories</span>
-      </button>
+      <button class="nav-item active" type="button" role="tab" aria-selected="true" data-tab="home">Log</button>
+      <button class="nav-item" type="button" role="tab" aria-selected="false" data-tab="log">Shifts</button>
+      <button class="nav-item" type="button" role="tab" aria-selected="false" data-tab="metrics">Metrics</button>
+      <button class="nav-item" type="button" role="tab" aria-selected="false" data-tab="categories">Categories</button>
     </nav>
 
     <!-- Category modal -->
     <dialog id="categoryDialog" class="dialog">
-      <form method="dialog" id="categoryForm" class="form">
+      <form method="dialog" id="categoryForm" class="dialog-form">
         <h3 id="categoryDialogTitle">Add Category</h3>
         <div class="field">
           <label for="catName">Name</label>
-          <input type="text" id="catName" required placeholder="e.g. Bellevue Long Call" />
+          <input class="input" type="text" id="catName" required placeholder="e.g. Bellevue Long Call" />
         </div>
         <div class="field">
           <label>Type</label>
           <div class="seg">
-            <input type="radio" id="catTypeHourly" name="catType" value="hourly" checked />
-            <label for="catTypeHourly">Hourly</label>
-            <input type="radio" id="catTypeFlat" name="catType" value="flat" />
-            <label for="catTypeFlat">Flat</label>
+            <label class="seg-opt"><input type="radio" id="catTypeHourly" name="catType" value="hourly" checked />Hourly</label>
+            <label class="seg-opt"><input type="radio" id="catTypeFlat" name="catType" value="flat" />Flat</label>
           </div>
         </div>
         <div class="field">
           <label for="catRate"><span id="catRateLabel">Hourly Rate ($)</span></label>
-          <input type="number" id="catRate" step="0.01" min="0" required />
+          <input class="input" type="number" id="catRate" step="0.01" min="0" required />
         </div>
         <div class="field" id="catStartTimeField">
           <label for="catStartTime">Start time</label>
-          <input type="time" id="catStartTime" />
+          <input class="input" type="time" id="catStartTime" />
         </div>
         <div class="dialog-actions">
-          <button type="button" class="btn btn-ghost" id="catCancel">Cancel</button>
+          <button type="button" class="btn btn-secondary" id="catCancel">Cancel</button>
           <button type="submit" class="btn btn-primary" id="catSave">Save</button>
         </div>
       </form>
