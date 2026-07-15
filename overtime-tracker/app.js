@@ -1149,20 +1149,13 @@
   }
 
   // ---- Theme ---------------------------------------------------------------
+  // The moon/sun icon swap is pure CSS driven by the html.ci-dark class.
   function wireTheme() {
-    const applyIcon = () => {
-      const dark = document.documentElement.classList.contains("ci-dark");
-      const moon = $("themeIconMoon");
-      const sun = $("themeIconSun");
-      if (moon) moon.hidden = dark;
-      if (sun) sun.hidden = !dark;
-    };
     let saved = null;
     try {
       saved = localStorage.getItem("ci-theme");
     } catch (e) {}
     if (saved === "dark") document.documentElement.classList.add("ci-dark");
-    applyIcon();
     const btn = $("themeToggle");
     if (btn) {
       btn.addEventListener("click", () => {
@@ -1170,7 +1163,6 @@
         try {
           localStorage.setItem("ci-theme", dark ? "dark" : "light");
         } catch (e) {}
-        applyIcon();
       });
     }
   }
