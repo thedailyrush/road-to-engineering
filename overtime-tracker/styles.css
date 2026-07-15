@@ -81,6 +81,7 @@ body {
   min-height: 100vh;
   padding-bottom: 132px; /* clears the floating nav */
   transition: background .2s;
+  overflow-x: clip;
 }
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
@@ -215,24 +216,42 @@ input[type="checkbox"] {
 }
 
 /* ---- Forms ---- */
+.field { min-width: 0; }
 .field > label {
   display: block; font-size: 12px; margin-bottom: 5px;
   color: color-mix(in srgb, var(--color-text) 70%, transparent);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .field .hint { font-size: 11px; text-transform: none; letter-spacing: 0; }
 .input {
-  width: 100%; min-height: 38px; padding: 6px 14px; font: inherit;
+  width: 100%; min-width: 0; min-height: 38px; padding: 6px 14px; font: inherit;
   font-size: 14px; color: var(--color-text); caret-color: var(--color-accent);
-  background: var(--color-surface);
+  background-color: var(--color-surface);
   border: 1px solid var(--color-divider);
   border-radius: 999px;
+  appearance: none;
+  -webkit-appearance: none;
 }
 .input:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
 .input:focus-visible { border-color: var(--color-accent); outline-offset: 0; }
 .input.compact { width: auto; }
 .input.search { flex: 1 1 160px; min-width: 160px; }
-.form-card .input { background: var(--color-bg); }
-html.ci-dark .form-card .input { background: var(--color-bg); }
+
+/* selects lose the native arrow with appearance:none — draw our own chevron */
+select.input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23201e1d' stroke-opacity='.55' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
+}
+html.ci-dark select.input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23f3e8d6' stroke-opacity='.65' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* iOS: left-align the value inside date/time inputs (it centers by default) */
+.input::-webkit-date-and-time-value { text-align: left; }
+.form-card .input { background-color: var(--color-bg); }
+html.ci-dark .form-card .input { background-color: var(--color-bg); }
 
 .entry-form { display: flex; flex-direction: column; gap: 20px; }
 .form-row {
@@ -399,7 +418,7 @@ html.ci-dark .tag-neutral  { background: color-mix(in srgb, var(--color-text) 10
 
 /* ---- Categories table ---- */
 .table-wrap { overflow-x: auto; margin: 0 -4px; padding: 0 4px; -webkit-overflow-scrolling: touch; }
-.table { width: 100%; min-width: 600px; border-collapse: collapse; font-size: 14px; }
+.table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 14px; }
 .table th {
   text-align: left; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
   color: color-mix(in srgb, var(--color-text) 60%, transparent);
@@ -422,8 +441,11 @@ html.ci-dark .tag-neutral  { background: color-mix(in srgb, var(--color-text) 10
   font: inherit; font-size: 14px; color: var(--color-text);
   background: transparent; border: 1px solid transparent;
   padding: 6px 10px; border-radius: 999px; width: 100%;
-  min-width: 90px; font-variant-numeric: tabular-nums;
+  min-width: 90px; min-height: 34px; font-variant-numeric: tabular-nums;
+  appearance: none;
+  -webkit-appearance: none;
 }
+.row-edit input::-webkit-date-and-time-value { text-align: left; }
 .row-edit .cat-name input { font-weight: 600; min-width: 150px; }
 .row-edit input:hover { border-color: var(--color-divider); }
 .row-edit input:focus { border-color: var(--color-accent); background: var(--color-bg); }
@@ -578,8 +600,8 @@ html.ci-dark .tag-neutral  { background: color-mix(in srgb, var(--color-text) 10
   .shift-totals { gap: 12px; flex-wrap: wrap; }
 
   /* categories: table becomes stacked cards — no horizontal scroll */
-  #categoriesPanel .table-wrap { overflow-x: visible; margin: 0; padding: 0; }
-  #categoriesTable { display: block; min-width: 0; }
+  #categoriesPanel .table-wrap { overflow: visible; margin: 0; padding: 0; }
+  #categoriesTable { display: block; width: 100%; min-width: 0; }
   #categoriesTable thead { display: none; }
   #categoriesTable tbody { display: flex; flex-direction: column; gap: 10px; }
 
@@ -591,7 +613,7 @@ html.ci-dark .tag-neutral  { background: color-mix(in srgb, var(--color-text) 10
     grid-template-areas:
       "name  name  del"
       "type  rate  time";
-    grid-template-columns: auto 1fr 96px;
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr) minmax(0, 100px);
     gap: 8px 10px;
     padding: 12px 14px;
     border: 1px solid var(--color-divider);
