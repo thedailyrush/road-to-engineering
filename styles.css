@@ -65,6 +65,10 @@ html.ci-dark {
 }
 html.ci-dark .card { border: 1px solid var(--color-divider); }
 
+/* theme toggle shows the mode you'd switch TO: moon in light, sun in dark */
+html.ci-dark #themeIconMoon { display: none; }
+html:not(.ci-dark) #themeIconSun { display: none; }
+
 /* ---- Base ---- */
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
