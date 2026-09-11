@@ -294,8 +294,23 @@
     (n || 0).toLocaleString(undefined, { style: "currency", currency: "USD" });
   const fmtHours = (n) => (Number(n) || 0).toFixed(2);
 
+  // categoryById is called inside loops over every entry (entries list, summary,
+  // metrics, recent rail), so a linear scan made those renders O(entries x
+  // categories). This caches an id -> category Map and rebuilds it whenever the
+  // categories array is replaced or changes length, which covers every mutation
+  // site (reassignment, .filter(), .push()) without manual invalidation calls
+  // that a later edit could forget. Category ids are never edited in place.
+  let _catIndex = null;
+  let _catIndexSrc = null;
+  let _catIndexLen = -1;
+
   function categoryById(id) {
-    return state.categories.find((c) => c.id === id);
+    if (_catIndexSrc !== state.categories || _catIndexLen !== state.categories.length) {
+      _catIndex = new Map(state.categories.map((c) => [c.id, c]));
+      _catIndexSrc = state.categories;
+      _catIndexLen = state.categories.length;
+    }
+    return _catIndex.get(id);
   }
 
   // Hours worked past 7 PM are paid at the bumped rate, but only for shifts
@@ -1055,9 +1070,13 @@
     });
 
     // Filters
+    // Typing rebuilt the whole entry list on every keystroke; debounce so a
+    // burst of typing costs one render instead of one per character.
+    let searchDebounce;
     $("searchInput").addEventListener("input", (ev) => {
       state.filter.search = ev.target.value;
-      renderEntries();
+      clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(renderEntries, 150);
     });
     $("filterMonth").addEventListener("change", (ev) => {
       state.filter.month = ev.target.value;
