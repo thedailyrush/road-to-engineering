@@ -58,6 +58,14 @@
     <!-- Page 1: Log -->
     <div id="tab-home" class="tab-pane active">
       <main class="page">
+        <div class="summary-head">
+          <span class="summary-caption" id="summaryCaption">All time</span>
+          <div class="seg seg-sm" role="radiogroup" aria-label="Summary period">
+            <label class="seg-opt"><input type="radio" name="summaryScope" value="ytd" />YTD</label>
+            <label class="seg-opt"><input type="radio" name="summaryScope" value="all" checked />All time</label>
+          </div>
+        </div>
+
         <section class="summary">
           <div class="card elev-sm stat">
             <span class="label">Total Earned</span>

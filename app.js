@@ -36,6 +36,7 @@
     filter: { search: "", category: "", status: "", month: "" },
     editingCategoryId: null,
     editingEntryId: null,
+    summaryScope: "all",
     user: null,
     selectedEntries: new Set(),
     visibleEntryIds: new Set(),
@@ -689,12 +690,22 @@
     });
   }
 
+  // The Log tab stats cover either every entry ever logged, or the current
+  // calendar year. "ytd" matches the Metrics tab's year filter, so a shift you
+  // have logged for later this year counts toward it.
+  function summaryScopedEntries() {
+    if (state.summaryScope !== "ytd") return state.entries;
+    const year = String(new Date().getFullYear());
+    return state.entries.filter((e) => e.date && e.date.startsWith(year));
+  }
+
   function renderSummary() {
     let total = 0,
       outstanding = 0,
       deposited = 0,
       hours = 0;
-    for (const e of state.entries) {
+    const rows = summaryScopedEntries();
+    for (const e of rows) {
       const earned = calcEarned(e);
       total += earned;
       if (e.status === "deposited") deposited += earned;
@@ -706,7 +717,12 @@
     $("statPending").textContent = fmtMoney(outstanding);
     $("statDeposited").textContent = fmtMoney(deposited);
     $("statHours").textContent = fmtHours(hours);
-    $("statShifts").textContent = String(state.entries.length);
+    $("statShifts").textContent = String(rows.length);
+    const caption = $("summaryCaption");
+    if (caption) {
+      caption.textContent =
+        state.summaryScope === "ytd" ? String(new Date().getFullYear()) : "All time";
+    }
   }
 
   function renderMetrics() {
@@ -933,6 +949,25 @@
 
   // ---- Wire ----------------------------------------------------------------
   function wire() {
+    // Summary period toggle — restore the saved choice before the first render,
+    // then keep it in sync. Persisted like the theme preference.
+    let savedScope = null;
+    try {
+      savedScope = localStorage.getItem("ci-summary-scope");
+    } catch (e) {}
+    if (savedScope === "ytd" || savedScope === "all") state.summaryScope = savedScope;
+    document.querySelectorAll('input[name="summaryScope"]').forEach((radio) => {
+      radio.checked = radio.value === state.summaryScope;
+      radio.addEventListener("change", () => {
+        if (!radio.checked) return;
+        state.summaryScope = radio.value;
+        try {
+          localStorage.setItem("ci-summary-scope", radio.value);
+        } catch (e) {}
+        renderSummary();
+      });
+    });
+
     $("entryDate").value = new Date().toISOString().slice(0, 10);
     $("entryCategory").addEventListener("change", () => {
       syncHoursField();

@@ -190,6 +190,15 @@ input[type="checkbox"] {
 .panel-head .grow { margin-right: auto; flex: 1 1 260px; }
 
 /* ---- Stat cards ---- */
+.summary-head {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.summary-caption {
+  margin-right: auto;
+  font-size: 12px; letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--color-text) 55%, transparent);
+}
 .summary {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
