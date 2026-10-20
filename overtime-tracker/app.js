@@ -432,23 +432,57 @@
     }
   }
 
+  // Orders categories for the shift picker by how often they have actually been
+  // logged, so the shifts you use most sit at the top. Ties break toward the
+  // most recently used; categories you have never logged keep their original
+  // order at the bottom rather than being shuffled arbitrarily.
+  function categoriesByUsage() {
+    const count = new Map();
+    const lastUsed = new Map();
+    for (const e of state.entries) {
+      if (!e.categoryId) continue;
+      count.set(e.categoryId, (count.get(e.categoryId) || 0) + 1);
+      const seen = lastUsed.get(e.categoryId);
+      if (!seen || (e.date || "") > seen) lastUsed.set(e.categoryId, e.date || "");
+    }
+    return state.categories
+      .map((c, i) => ({
+        cat: c,
+        order: i,
+        uses: count.get(c.id) || 0,
+        last: lastUsed.get(c.id) || "",
+      }))
+      .sort(
+        (a, b) =>
+          b.uses - a.uses ||
+          (a.last < b.last ? 1 : a.last > b.last ? -1 : 0) ||
+          a.order - b.order
+      )
+      .map((x) => x.cat);
+  }
+
   function renderCategoryDropdowns() {
     const sel = $("entryCategory");
     const filt = $("filterCategory");
     const prev = sel.value;
     sel.innerHTML = "";
     filt.innerHTML = `<option value="">All categories</option>`;
-    for (const c of state.categories) {
+    // Shift picker is ordered by usage so the common choices are reachable
+    // without scrolling, and the top entry is a sensible default.
+    for (const c of categoriesByUsage()) {
       const opt = document.createElement("option");
       opt.value = c.id;
       opt.textContent = `${c.name} ${c.type === "flat" ? `(flat ${fmtMoney(c.rate)})` : `(${fmtMoney(c.rate)}/hr)`}`;
       sel.appendChild(opt);
+    }
+    // The filter is a lookup list people scan, so it keeps a stable order.
+    for (const c of state.categories) {
       const o2 = document.createElement("option");
       o2.value = c.id;
       o2.textContent = c.name;
       filt.appendChild(o2);
     }
-    if (prev && state.categories.find((c) => c.id === prev)) sel.value = prev;
+    if (prev && categoryById(prev)) sel.value = prev;
     syncHoursField();
     updatePreview();
   }
